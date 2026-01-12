@@ -8,14 +8,14 @@ router.get('/', async (req, res) => {
     const records = await jobsTable.select({
       sort: [{ field: 'createdAt', direction: 'asc' }]
     }).all();
-    
+
     const jobs = records.map(record => ({
       id: record.id,
       ...record.fields
     }));
-    
-    res.json({ 
-      jobs, 
+
+    res.json({
+      jobs,
       count: jobs.length,
       timestamp: new Date().toISOString()
     });
@@ -29,8 +29,8 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const record = await jobsTable.find(req.params.id);
-    
-    res.json({ 
+
+    res.json({
       job: {
         id: record.id,
         ...record.fields
@@ -46,17 +46,17 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const jobData = req.body;
-    
+
     // Validate required fields
     if (!jobData.machine) {
       return res.status(400).json({ error: 'Machine is required' });
     }
-    
+
     const records = await jobsTable.create([
       { fields: jobData }
     ]);
-    
-    res.status(201).json({ 
+
+    res.status(201).json({
       job: {
         id: records[0].id,
         ...records[0].fields
@@ -74,15 +74,15 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const jobData = req.body;
-    
+
     const records = await jobsTable.update([
-      { 
-        id: req.params.id, 
-        fields: jobData 
+      {
+        id: req.params.id,
+        fields: jobData
       }
     ]);
-    
-    res.json({ 
+
+    res.json({
       job: {
         id: records[0].id,
         ...records[0].fields
@@ -99,15 +99,15 @@ router.put('/:id', async (req, res) => {
 router.patch('/:id', async (req, res) => {
   try {
     const updates = req.body;
-    
+
     const records = await jobsTable.update([
-      { 
-        id: req.params.id, 
-        fields: updates 
+      {
+        id: req.params.id,
+        fields: updates
       }
     ]);
-    
-    res.json({ 
+
+    res.json({
       job: {
         id: records[0].id,
         ...records[0].fields
@@ -124,10 +124,10 @@ router.patch('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     await jobsTable.destroy([req.params.id]);
-    
-    res.json({ 
-      message: 'Job deleted successfully', 
-      id: req.params.id 
+
+    res.json({
+      message: 'Job deleted successfully',
+      id: req.params.id
     });
   } catch (error) {
     console.error('Error deleting job:', error);
@@ -142,14 +142,14 @@ router.get('/machine/:machineName', async (req, res) => {
       filterByFormula: `{machine} = '${req.params.machineName}'`,
       sort: [{ field: 'createdAt', direction: 'asc' }]
     }).all();
-    
+
     const jobs = records.map(record => ({
       id: record.id,
       ...record.fields
     }));
-    
-    res.json({ 
-      jobs, 
+
+    res.json({
+      jobs,
       count: jobs.length,
       machine: req.params.machineName
     });
