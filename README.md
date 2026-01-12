@@ -1,11 +1,33 @@
 # Manufacturing Schedule - Drag & Drop Application
 
-A fully functional web-based manufacturing scheduling tool with drag-and-drop functionality for managing jobs across 22 production machines.
+A fully functional web-based manufacturing scheduling tool with drag-and-drop functionality for managing jobs across 22 production machines. **Now with multi-workstation data sharing via Airtable and Heroku!**
+
+## 🚀 Quick Deployment (One Command!)
+
+Deploy to Heroku with shared data across all workstations:
+
+```bash
+./deploy.sh
+```
+
+This script will:
+1. Set up Airtable tables automatically
+2. Create and configure your Heroku app
+3. Deploy everything and give you a live URL
+
+**Prerequisites:**
+- [Node.js](https://nodejs.org/) v18+
+- [Heroku CLI](https://devcenter.heroku.com/articles/heroku-cli)
+- Git
 
 ## 🎯 Features
 
 ### ✅ Currently Completed
 
+- **Multi-Workstation Data Sharing** - Real-time sync across all computers and browsers via Airtable
+- **One-Click Cloud Deployment** - Deploy to Heroku with a single command
+- **Auto-Refresh** - Data syncs every 30 seconds across all connected workstations
+- **Offline Fallback** - Works locally if server is unavailable
 - **22 Machine Columns** - Specific production machines with custom names
 - **Drag & Drop Job Movement** - Intuitive job scheduling across machines
 - **Setup/Maintenance Tracking** - Dedicated blocks for tool setup and maintenance with visual status indicators
@@ -263,27 +285,53 @@ Generate a professional PDF snapshot of your entire schedule:
 ## 📁 Project Structure
 
 ```
-├── index.html              # Main application page
-├── css/
-│   └── style.css          # Complete styling and responsive design
-├── js/
-│   └── main.js            # Application logic and drag-drop functionality
-└── README.md              # This documentation file
+├── deploy.sh                    # One-click deployment script
+├── README.md                    # This documentation
+├── backend/                     # Node.js API server (deploys to Heroku)
+│   ├── server.js               # Express server with API routes
+│   ├── package.json            # Node.js dependencies
+│   ├── Procfile                # Heroku deployment config
+│   ├── config/
+│   │   └── airtable.js         # Airtable database connection
+│   ├── routes/
+│   │   ├── jobs.js             # Jobs CRUD API endpoints
+│   │   └── priorities.js       # Machine priorities API endpoints
+│   └── public/                 # Frontend files (served by Express)
+│       ├── index.html          # Main application page
+│       ├── css/style.css       # Styling
+│       └── js/main.js          # Frontend JavaScript with API calls
+├── frontend/                    # Frontend source files
+│   ├── index.html
+│   ├── css/style.css
+│   └── js/main.js
+└── scripts/                     # Setup utilities
+    ├── setup-airtable.sh       # Airtable table creation
+    ├── setup-airtable.js       # Node.js version of setup
+    └── deploy-heroku.sh        # Heroku deployment script
 ```
 
 ## 🛠️ Technical Details
 
 ### Technologies Used
+
+**Frontend:**
 - **HTML5** - Semantic markup structure
 - **CSS3** - Modern styling with Flexbox and Grid
 - **JavaScript (ES6+)** - Client-side logic and interactivity
 - **Font Awesome 6.4.0** - Icons via CDN
 - **Google Fonts (Inter)** - Typography via CDN
 
+**Backend:**
+- **Node.js** - Server runtime
+- **Express.js** - Web framework
+- **Airtable** - Cloud database for shared data
+- **Heroku** - Cloud hosting platform
+
 ### Data Storage
-- **Local Storage API** - Browser-based persistence
-- Data automatically saves on every change
-- No server or database required
+- **Primary**: Airtable cloud database - shared across all workstations
+- **Fallback**: Local Storage API - browser-based persistence when offline
+- Data automatically syncs every 30 seconds
+- Real-time updates across all connected users
 
 ### Browser Compatibility
 - Chrome 90+
