@@ -5,17 +5,15 @@ const { jobsTable } = require('../config/airtable');
 // GET all jobs
 router.get('/', async (req, res) => {
   try {
-    const records = await jobsTable.select({
-      sort: [{ field: 'createdAt', direction: 'asc' }]
-    }).all();
-    
+    const records = await jobsTable.select().all();
+
     const jobs = records.map(record => ({
       id: record.id,
       ...record.fields
     }));
-    
-    res.json({ 
-      jobs, 
+
+    res.json({
+      jobs,
       count: jobs.length,
       timestamp: new Date().toISOString()
     });
@@ -139,17 +137,16 @@ router.delete('/:id', async (req, res) => {
 router.get('/machine/:machineName', async (req, res) => {
   try {
     const records = await jobsTable.select({
-      filterByFormula: `{machine} = '${req.params.machineName}'`,
-      sort: [{ field: 'createdAt', direction: 'asc' }]
+      filterByFormula: `{machine} = '${req.params.machineName}'`
     }).all();
-    
+
     const jobs = records.map(record => ({
       id: record.id,
       ...record.fields
     }));
-    
-    res.json({ 
-      jobs, 
+
+    res.json({
+      jobs,
       count: jobs.length,
       machine: req.params.machineName
     });
