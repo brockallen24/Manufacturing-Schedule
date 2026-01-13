@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Airtable Setup Verification</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #667eea;
+            text-align: center;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .bigbutton {
+            display: block;
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 10px;
+            margin: 20px 0;
+            transition: transform 0.2s;
+        }
+        .bigbutton:hover {
+            transform: scale(1.02);
+        }
+        .bigbutton:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .progress {
+            margin: 30px 0;
+        }
+        .progress-bar {
+            background: #f0f0f0;
+            height: 40px;
+            border-radius: 20px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        .field-check {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 5px solid #ddd;
+            background: #fafafa;
+        }
+        .field-check.pass {
+            background: #e8f5e9;
+            border-left-color: #4caf50;
+        }
+        .field-check.fail {
+            background: #ffebee;
+            border-left-color: #f44336;
+        }
+        .field-check.pending {
+            background: #fff3e0;
+            border-left-color: #ff9800;
+        }
+        .field-check .icon {
+            font-size: 24px;
+            margin-right: 15px;
+            min-width: 30px;
+        }
+        .field-check .name {
+            flex: 1;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
+        .field-check .type {
+            color: #666;
+            font-size: 14px;
+            margin-right: 15px;
+        }
+        .field-check .status {
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        .status.pass {
+            background: #4caf50;
+            color: white;
+        }
+        .status.fail {
+            background: #f44336;
+            color: white;
+        }
+        .status.pending {
+            background: #ff9800;
+            color: white;
+        }
+        .summary {
+            margin: 30px 0;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 18px;
+        }
+        .summary.success {
+            background: #e8f5e9;
+            border: 3px solid #4caf50;
+            color: #2e7d32;
+        }
+        .summary.failure {
+            background: #ffebee;
+            border: 3px solid #f44336;
+            color: #c62828;
+        }
+        .summary.partial {
+            background: #fff3e0;
+            border: 3px solid #ff9800;
+            color: #e65100;
+        }
+        .instructions {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 5px solid #2196f3;
+        }
+        .emoji {
+            font-size: 48px;
+            margin: 20px 0;
+        }
+        pre {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .help-link {
+            display: block;
+            text-align: center;
+            margin: 20px 0;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .help-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Airtable Setup Verification</h1>
+        <p class="subtitle">Let's check if your Airtable table is set up correctly!</p>
+
+        <button class="bigbutton" onclick="runVerification()">
+            🚀 CHECK MY AIRTABLE SETUP
+        </button>
+
+        <div class="instructions">
+            <strong>📋 Before you start:</strong><br>
+            Make sure you've added all 13 required fields to your Airtable "Jobs" table.<br>
+            If you haven't done this yet, follow the guide in <code>AIRTABLE_FIELD_SETUP.md</code>
+        </div>
+
+        <div id="progress" style="display: none;">
+            <div class="progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressBar">0%</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="results"></div>
+
+        <a href="https://airtable.com/appYjsKjwhJbkwFv5" target="_blank" class="help-link">
+            🔗 Open My Airtable Base
+        </a>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://manufacturing-schedule-7575b6f1cdb3.herokuapp.com';
+
+        const REQUIRED_FIELDS = [
+            { name: 'id', type: 'text' },
+            { name: 'type', type: 'select' },
+            { name: 'machine', type: 'text' },
+            { name: 'jobName', type: 'text' },
+            { name: 'workOrder', type: 'text' },
+            { name: 'numParts', type: 'number' },
+            { name: 'cycleTime', type: 'number' },
+            { name: 'numCavities', type: 'number' },
+            { name: 'material', type: 'text' },
+            { name: 'totalMaterial', type: 'number' },
+            { name: 'totalHours', type: 'number' },
+            { name: 'dueDate', type: 'date' },
+            { name: 'percentComplete', type: 'number' }
+        ];
+
+        async function runVerification() {
+            document.getElementById('progress').style.display = 'block';
+            document.getElementById('results').innerHTML = '';
+
+            updateProgress(10, 'Connecting to API...');
+
+            try {
+                // Step 1: Check if backend is responding
+                updateProgress(20, 'Checking backend connection...');
+                const healthResponse = await fetch(`${API_BASE_URL}/health`);
+                if (!healthResponse.ok) {
+                    throw new Error('Backend is not responding');
+                }
+
+                // Step 2: Try to create a test job
+                updateProgress(40, 'Testing job creation...');
+                const testJob = {
+                    id: 'verify_' + Date.now(),
+                    type: 'job',
+                    machine: '22',
+                    jobName: 'Verification Test',
+                    workOrder: 'VERIFY-001',
+                    numParts: 100,
+                    cycleTime: 30,
+                    numCavities: 2,
+                    material: 'Steel',
+                    totalMaterial: 50,
+                    totalHours: 0.42,
+                    dueDate: '2026-01-20',
+                    percentComplete: 0
+                };
+
+                const createResponse = await fetch(`${API_BASE_URL}/api/jobs`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testJob)
+                });
+
+                updateProgress(60, 'Analyzing results...');
+                const createData = await createResponse.json();
+
+                if (createResponse.ok) {
+                    // Success! Check what fields were saved
+                    updateProgress(80, 'Verifying saved data...');
+
+                    // Get the job back
+                    const getResponse = await fetch(`${API_BASE_URL}/api/jobs`);
+                    const getData = await getResponse.json();
+
+                    updateProgress(100, 'Complete!');
+
+                    // Find our test job
+                    const savedJob = getData.jobs.find(j => j.id === testJob.id);
+
+                    if (savedJob) {
+                        displaySuccessResults(savedJob, testJob);
+
+                        // Clean up test job
+                        setTimeout(() => {
+                            fetch(`${API_BASE_URL}/api/jobs/${testJob.id}`, { method: 'DELETE' });
+                        }, 2000);
+                    } else {
+                        displayPartialResults(createData);
+                    }
+                } else {
+                    // Failed to create - show what's missing
+                    updateProgress(100, 'Issues found');
+                    displayFailureResults(createData);
+                }
+
+            } catch (error) {
+                updateProgress(100, 'Error');
+                displayErrorResults(error);
+            }
+        }
+
+        function updateProgress(percent, message) {
+            const bar = document.getElementById('progressBar');
+            bar.style.width = percent + '%';
+            bar.textContent = message;
+        }
+
+        function displaySuccessResults(savedJob, originalJob) {
+            let html = '<div class="summary success">';
+            html += '<div class="emoji">🎉</div>';
+            html += '<h2>SUCCESS! Your Airtable is set up correctly!</h2>';
+            html += '<p>All required fields are present and working.</p>';
+            html += '</div>';
+
+            html += '<h3>✅ Field Verification:</h3>';
+
+            REQUIRED_FIELDS.forEach(field => {
+                const exists = savedJob.hasOwnProperty(field.name);
+                html += `
+                    <div class="field-check ${exists ? 'pass' : 'fail'}">
+                        <div class="icon">${exists ? '✅' : '❌'}</div>
+                        <div class="name">${field.name}</div>
+                        <div class="type">${field.type}</div>
+                        <div class="status ${exists ? 'pass' : 'fail'}">${exists ? 'PRESENT' : 'MISSING'}</div>
+                    </div>
+                `;
+            });
+
+            html += '<div class="instructions">';
+            html += '<strong>🚀 Next Steps:</strong><br>';
+            html += '1. Your Airtable is ready!<br>';
+            html += '2. Open your frontend app<br>';
+            html += '3. Try adding a real job - it should save without errors!<br>';
+            html += '4. Check your Airtable to see the saved job<br>';
+            html += '</div>';
+
+            html += '<h4>Test Job Data:</h4>';
+            html += '<pre>' + JSON.stringify(savedJob, null, 2) + '</pre>';
+
+            document.getElementById('results').innerHTML = html;
+        }
+
+        function displayPartialResults(createData) {
+            let html = '<div class="summary partial">';
+            html += '<div class="emoji">⚠️</div>';
+            html += '<h2>Partial Success</h2>';
+            html += '<p>Job was created but some fields may be missing.</p>';
+            html += '</div>';
+
+            html += '<pre>' + JSON.stringify(createData, null, 2) + '</pre>';
+
+            document.getElementById('results').innerHTML = html;
+        }
+
+        function displayFailureResults(createData) {
+            let html = '<div class="summary failure">';
+            html += '<div class="emoji">❌</div>';
+            html += '<h2>Setup Incomplete</h2>';
+            html += '<p>Your Airtable table is missing required fields.</p>';
+            html += '</div>';
+
+            html += '<h3>Error Details:</h3>';
+            html += '<pre>' + JSON.stringify(createData, null, 2) + '</pre>';
+
+            html += '<div class="instructions">';
+            html += '<strong>🔧 How to Fix:</strong><br>';
+            html += '1. Open <code>AIRTABLE_FIELD_SETUP.md</code> for detailed instructions<br>';
+            html += '2. Go to your Airtable base: <a href="https://airtable.com/appYjsKjwhJbkwFv5" target="_blank">Open Base</a><br>';
+            html += '3. Add all 13 required fields<br>';
+            html += '4. Come back and run this verification again<br>';
+            html += '</div>';
+
+            html += '<h3>Required Fields:</h3>';
+            REQUIRED_FIELDS.forEach(field => {
+                html += `
+                    <div class="field-check pending">
+                        <div class="icon">⏳</div>
+                        <div class="name">${field.name}</div>
+                        <div class="type">${field.type}</div>
+                        <div class="status pending">NEEDS ADDING</div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('results').innerHTML = html;
+        }
+
+        function displayErrorResults(error) {
+            let html = '<div class="summary failure">';
+            html += '<div class="emoji">🚨</div>';
+            html += '<h2>Connection Error</h2>';
+            html += '<p>' + error.message + '</p>';
+            html += '</div>';
+
+            html += '<div class="instructions">';
+            html += '<strong>Possible causes:</strong><br>';
+            html += '• Backend is not running on Heroku<br>';
+            html += '• Network connection issue<br>';
+            html += '• CORS policy blocking request<br><br>';
+            html += '<strong>Try:</strong><br>';
+            html += '1. Check Heroku dyno is running (green circle)<br>';
+            html += '2. Test URL: <a href="' + API_BASE_URL + '/health" target="_blank">' + API_BASE_URL + '/health</a><br>';
+            html += '3. Redeploy backend if needed<br>';
+            html += '</div>';
+
+            document.getElementById('results').innerHTML = html;
+        }
+    </script>
+</body>
+</html>
