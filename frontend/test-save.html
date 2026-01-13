@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Airtable Save - Manufacturing Schedule</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 10px 10px 0;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .test-button {
+            background: #2196F3;
+        }
+        .test-button:hover:not(:disabled) {
+            background: #0b7dda;
+        }
+        .delete-button {
+            background: #f44336;
+        }
+        .delete-button:hover:not(:disabled) {
+            background: #da190b;
+        }
+        #results {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .step {
+            margin: 15px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
+        .field-list {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .field-list h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+        .field-item {
+            padding: 5px 0;
+            font-family: 'Courier New', monospace;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Airtable Save Diagnostic Tool</h1>
+        <p class="subtitle">Test your Manufacturing Schedule connection to Airtable</p>
+
+        <div class="field-list">
+            <h3>Required Airtable Fields</h3>
+            <p>Your "Jobs" table in Airtable MUST have these 13 fields:</p>
+            <div class="field-item">1. id (Single line text)</div>
+            <div class="field-item">2. type (Single select: "job", "setup")</div>
+            <div class="field-item">3. machine (Single line text)</div>
+            <div class="field-item">4. jobName (Single line text)</div>
+            <div class="field-item">5. workOrder (Single line text)</div>
+            <div class="field-item">6. numParts (Number - integer)</div>
+            <div class="field-item">7. cycleTime (Number - decimal)</div>
+            <div class="field-item">8. numCavities (Number - integer)</div>
+            <div class="field-item">9. material (Single line text)</div>
+            <div class="field-item">10. totalMaterial (Number - decimal)</div>
+            <div class="field-item">11. totalHours (Number - decimal)</div>
+            <div class="field-item">12. dueDate (Date)</div>
+            <div class="field-item">13. percentComplete (Number - integer)</div>
+            <p style="margin-top: 10px; color: #856404;">⚠️ Field names are case-sensitive!</p>
+        </div>
+
+        <div class="step">
+            <strong>Step 1:</strong> Check API Connection
+            <br>
+            <button id="testConnectionBtn" class="test-button">Test Connection</button>
+        </div>
+
+        <div class="step">
+            <strong>Step 2:</strong> View Current Airtable Structure
+            <br>
+            <button id="checkFieldsBtn" class="test-button">Check What Fields Exist</button>
+        </div>
+
+        <div class="step">
+            <strong>Step 3:</strong> Try to Save a Test Job
+            <br>
+            <button id="testSaveBtn">Try to Save Test Job</button>
+        </div>
+
+        <div class="step">
+            <strong>Step 4:</strong> Clean Up (Delete test job if created)
+            <br>
+            <button id="deleteTestBtn" class="delete-button" disabled>Delete Test Job</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://manufacturing-schedule-7575b6f1cdb3.herokuapp.com/api';
+        let testJobId = null;
+
+        const resultsDiv = document.getElementById('results');
+        const testConnectionBtn = document.getElementById('testConnectionBtn');
+        const checkFieldsBtn = document.getElementById('checkFieldsBtn');
+        const testSaveBtn = document.getElementById('testSaveBtn');
+        const deleteTestBtn = document.getElementById('deleteTestBtn');
+
+        function showLoading(button) {
+            button.disabled = true;
+            const loader = document.createElement('span');
+            loader.className = 'loading';
+            button.insertBefore(loader, button.firstChild);
+        }
+
+        function hideLoading(button) {
+            button.disabled = false;
+            const loader = button.querySelector('.loading');
+            if (loader) loader.remove();
+        }
+
+        function showResult(message, type = 'info') {
+            resultsDiv.className = type;
+            resultsDiv.textContent = message;
+            resultsDiv.style.display = 'block';
+        }
+
+        // Test 1: Connection
+        testConnectionBtn.addEventListener('click', async () => {
+            showLoading(testConnectionBtn);
+            showResult('Testing connection to Heroku backend...', 'info');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResult(
+                        `✅ CONNECTION SUCCESS!\n\n` +
+                        `API Response:\n${JSON.stringify(data, null, 2)}\n\n` +
+                        `✓ Heroku backend is running\n` +
+                        `✓ API is responding\n` +
+                        `✓ Ready for Airtable operations`,
+                        'success'
+                    );
+                } else {
+                    showResult(`❌ Backend responded with error:\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult(
+                    `❌ CONNECTION FAILED!\n\n` +
+                    `Error: ${error.message}\n\n` +
+                    `Possible causes:\n` +
+                    `- Heroku app is not running\n` +
+                    `- API URL is incorrect\n` +
+                    `- Network connectivity issue\n\n` +
+                    `Current API URL: ${API_BASE_URL}`,
+                    'error'
+                );
+            } finally {
+                hideLoading(testConnectionBtn);
+            }
+        });
+
+        // Test 2: Check Fields
+        checkFieldsBtn.addEventListener('click', async () => {
+            showLoading(checkFieldsBtn);
+            showResult('Fetching current Airtable structure...', 'info');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/jobs`);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Failed to fetch jobs');
+                }
+
+                if (data.jobs && data.jobs.length > 0) {
+                    const firstJob = data.jobs[0];
+                    const existingFields = Object.keys(firstJob).filter(key => key !== 'id');
+
+                    const requiredFields = [
+                        'type', 'machine', 'jobName', 'workOrder', 'numParts',
+                        'cycleTime', 'numCavities', 'material', 'totalMaterial',
+                        'totalHours', 'dueDate', 'percentComplete'
+                    ];
+
+                    const missingFields = requiredFields.filter(field => !existingFields.includes(field));
+                    const extraFields = existingFields.filter(field => !requiredFields.includes(field));
+
+                    let message = `📊 AIRTABLE STRUCTURE ANALYSIS\n\n`;
+                    message += `Found ${data.count} existing record(s)\n\n`;
+                    message += `Fields found in first record:\n`;
+                    existingFields.forEach(field => {
+                        message += `  • ${field}\n`;
+                    });
+
+                    if (missingFields.length > 0) {
+                        message += `\n❌ MISSING REQUIRED FIELDS (${missingFields.length}):\n`;
+                        missingFields.forEach(field => {
+                            message += `  ✗ ${field}\n`;
+                        });
+                        message += `\n🔧 ACTION REQUIRED:\n`;
+                        message += `You need to add these ${missingFields.length} fields to your Airtable "Jobs" table.\n`;
+                        message += `Follow the guide: AIRTABLE_FIELD_SETUP.md\n`;
+                        showResult(message, 'error');
+                    } else {
+                        message += `\n✅ ALL REQUIRED FIELDS PRESENT!\n\n`;
+                        if (extraFields.length > 0) {
+                            message += `Extra fields (these are fine):\n`;
+                            extraFields.forEach(field => {
+                                message += `  • ${field}\n`;
+                            });
+                        }
+                        message += `\nYour Airtable table structure is correct!\n`;
+                        message += `You can now proceed to test saving.`;
+                        showResult(message, 'success');
+                    }
+                } else {
+                    showResult(
+                        `⚠️ NO RECORDS FOUND\n\n` +
+                        `The "Jobs" table is empty. This means we can't check the field structure yet.\n\n` +
+                        `Try the next step: "Try to Save Test Job" to see what happens.`,
+                        'info'
+                    );
+                }
+
+                console.log('Full API Response:', data);
+
+            } catch (error) {
+                showResult(
+                    `❌ FAILED TO CHECK FIELDS\n\n` +
+                    `Error: ${error.message}\n\n` +
+                    `This could mean:\n` +
+                    `- Airtable connection is not working\n` +
+                    `- API credentials are incorrect\n` +
+                    `- Table name is wrong (should be "Jobs")`,
+                    'error'
+                );
+            } finally {
+                hideLoading(checkFieldsBtn);
+            }
+        });
+
+        // Test 3: Try to Save
+        testSaveBtn.addEventListener('click', async () => {
+            showLoading(testSaveBtn);
+            showResult('Attempting to save test job to Airtable...', 'info');
+
+            const testJobData = {
+                id: `TEST-${Date.now()}`,
+                type: 'job',
+                machine: 'Machine 1',
+                jobName: 'Test Job - Delete Me',
+                workOrder: 'WO-TEST-001',
+                numParts: 100,
+                cycleTime: 1.5,
+                numCavities: 2,
+                material: 'PLA',
+                totalMaterial: 150.5,
+                totalHours: 2.5,
+                dueDate: '2026-01-20',
+                percentComplete: 0
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/jobs`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testJobData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    testJobId = data.id || data.job?.id;
+                    deleteTestBtn.disabled = false;
+
+                    showResult(
+                        `✅ SUCCESS! Test job saved to Airtable!\n\n` +
+                        `Job ID: ${testJobId}\n\n` +
+                        `Response:\n${JSON.stringify(data, null, 2)}\n\n` +
+                        `🎉 YOUR AIRTABLE IS CONFIGURED CORRECTLY!\n\n` +
+                        `What this means:\n` +
+                        `✓ All required fields exist\n` +
+                        `✓ Field types are correct\n` +
+                        `✓ Saving works perfectly\n\n` +
+                        `You can now use your Manufacturing Schedule app!\n\n` +
+                        `Click "Delete Test Job" below to clean up.`,
+                        'success'
+                    );
+                } else {
+                    showResult(
+                        `❌ SAVE FAILED!\n\n` +
+                        `Status: ${response.status}\n` +
+                        `Error: ${data.error || 'Unknown error'}\n` +
+                        `Message: ${data.message || 'No message'}\n\n` +
+                        `Full Response:\n${JSON.stringify(data, null, 2)}\n\n` +
+                        `🔍 DIAGNOSIS:\n` +
+                        `This usually means your Airtable table is missing required fields\n` +
+                        `or the field types don't match.\n\n` +
+                        `📖 SOLUTION:\n` +
+                        `1. Open: https://airtable.com/appYjsKjwhJbkwFv5\n` +
+                        `2. Go to "Jobs" table\n` +
+                        `3. Follow: AIRTABLE_FIELD_SETUP.md\n` +
+                        `4. Add all 13 required fields\n` +
+                        `5. Run this test again`,
+                        'error'
+                    );
+                }
+            } catch (error) {
+                showResult(
+                    `❌ SAVE FAILED!\n\n` +
+                    `Error: ${error.message}\n\n` +
+                    `This is a network or API error, not an Airtable field issue.\n\n` +
+                    `Check:\n` +
+                    `- Is Heroku app running?\n` +
+                    `- Is API URL correct? ${API_BASE_URL}\n` +
+                    `- Network connectivity?`,
+                    'error'
+                );
+            } finally {
+                hideLoading(testSaveBtn);
+            }
+        });
+
+        // Test 4: Delete Test Job
+        deleteTestBtn.addEventListener('click', async () => {
+            if (!testJobId) {
+                showResult('❌ No test job ID found. Cannot delete.', 'error');
+                return;
+            }
+
+            showLoading(deleteTestBtn);
+            showResult('Deleting test job from Airtable...', 'info');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/jobs/${testJobId}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResult(
+                        `✅ Test job deleted successfully!\n\n` +
+                        `Job ID: ${testJobId}\n\n` +
+                        `Your Airtable table is now clean.`,
+                        'success'
+                    );
+                    testJobId = null;
+                    deleteTestBtn.disabled = true;
+                } else {
+                    showResult(
+                        `⚠️ Failed to delete test job\n\n` +
+                        `Error: ${data.error || 'Unknown error'}\n\n` +
+                        `You may need to manually delete it from Airtable.\n` +
+                        `Job ID: ${testJobId}`,
+                        'error'
+                    );
+                }
+            } catch (error) {
+                showResult(
+                    `❌ Delete failed: ${error.message}\n\n` +
+                    `You may need to manually delete the test job from Airtable.\n` +
+                    `Job ID: ${testJobId}`,
+                    'error'
+                );
+            } finally {
+                hideLoading(deleteTestBtn);
+            }
+        });
+    </script>
+</body>
+</html>
