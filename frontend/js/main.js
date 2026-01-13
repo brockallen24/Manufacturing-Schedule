@@ -1,7 +1,6 @@
 // Manufacturing Schedule - Main JavaScript
 // API Configuration
-const API_BASE_URL = 'https://your-app-name.herokuapp.com/api';
-
+const API_BASE_URL = 'https://manufacturing-schedule-7575b6f1cdb3.herokuapp.com/api';
 // Machine list
 const machines = [
     '22', '55', '90-1', '90-2', '90-3', 'Sumi1', '170-1', '170-2', 'Sumi2',
