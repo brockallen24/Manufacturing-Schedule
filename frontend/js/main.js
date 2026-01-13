@@ -1,4 +1,12 @@
 // Manufacturing Schedule - Main JavaScript
+//
+// DATA STORAGE ARCHITECTURE:
+// - PRIMARY: Airtable (via Heroku API) - All data is saved to and loaded from Airtable
+// - BACKUP: localStorage - Used only as a cache for offline fallback
+//
+// All CRUD operations prioritize Airtable. If Airtable operations fail,
+// the user is notified and the operation is not completed.
+//
 // API Configuration
 const API_BASE_URL = 'https://manufacturing-schedule-7575b6f1cdb3.herokuapp.com/api';
 // Machine list
@@ -13,23 +21,25 @@ let jobs = [];
 let machinePriorities = {};
 let editingJobId = null;
 
-// LocalStorage keys
+// LocalStorage keys (used for offline cache/backup only)
 const STORAGE_KEYS = {
     JOBS: 'manufacturingScheduleJobs',
     PRIORITIES: 'manufacturingSchedulePriorities'
 };
 
-// Save to localStorage
+// Save to localStorage (CACHE ONLY - for offline fallback)
+// This is called after successful Airtable operations to keep a local cache
 function saveToLocalStorage() {
     try {
         localStorage.setItem(STORAGE_KEYS.JOBS, JSON.stringify(jobs));
         localStorage.setItem(STORAGE_KEYS.PRIORITIES, JSON.stringify(machinePriorities));
     } catch (error) {
-        console.error('Error saving to localStorage:', error);
+        console.error('Error caching to localStorage:', error);
     }
 }
 
-// Load from localStorage
+// Load from localStorage (FALLBACK ONLY - when Airtable is unavailable)
+// This is only used when the API/Airtable connection fails
 function loadFromLocalStorage() {
     try {
         const savedJobs = localStorage.getItem(STORAGE_KEYS.JOBS);
@@ -48,7 +58,7 @@ function loadFromLocalStorage() {
             });
         }
     } catch (error) {
-        console.error('Error loading from localStorage:', error);
+        console.error('Error loading from localStorage cache:', error);
         // Initialize defaults on error
         jobs = [];
         machines.forEach(machine => {
@@ -60,10 +70,10 @@ function loadFromLocalStorage() {
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
     initializeBoard();
-    loadFromLocalStorage(); // Load from localStorage first
-    loadJobs(); // Then try to sync with API (if available)
-    loadPriorities(); // Sync priorities with API (if available)
     setupEventListeners();
+    // Load from API (Airtable) as primary source
+    loadJobs();
+    loadPriorities();
 });
 
 // Initialize schedule board
@@ -152,37 +162,41 @@ function calculateTotalHours() {
     document.getElementById('totalHours').value = totalHours.toFixed(2);
 }
 
-// Load jobs from API
+// Load jobs from API (Airtable via Heroku)
 async function loadJobs() {
     try {
         const response = await fetch(`${API_BASE_URL}/jobs`);
-        if (!response.ok) throw new Error('Failed to load jobs');
+        if (!response.ok) throw new Error('Failed to load jobs from Airtable');
 
         const data = await response.json();
         jobs = data.jobs || [];
-        saveToLocalStorage(); // Save API data to localStorage
+        saveToLocalStorage(); // Cache to localStorage as backup
         renderJobs();
     } catch (error) {
-        console.error('Error loading jobs from API:', error);
-        // Use localStorage data (already loaded), just render
+        console.error('Error loading jobs from Airtable:', error);
+        // Fallback to localStorage cache if API is unavailable
+        loadFromLocalStorage();
         renderJobs();
+        console.warn('Using cached data from localStorage - API/Airtable connection failed');
     }
 }
 
-// Load priorities from API
+// Load priorities from API (Airtable via Heroku)
 async function loadPriorities() {
     try {
         const response = await fetch(`${API_BASE_URL}/priorities`);
-        if (!response.ok) throw new Error('Failed to load priorities');
+        if (!response.ok) throw new Error('Failed to load priorities from Airtable');
 
         const data = await response.json();
         machinePriorities = data || {};
-        saveToLocalStorage(); // Save API data to localStorage
+        saveToLocalStorage(); // Cache to localStorage as backup
         updatePrioritySelectors();
     } catch (error) {
-        console.error('Error loading priorities from API:', error);
-        // Use localStorage data (already loaded), just update UI
+        console.error('Error loading priorities from Airtable:', error);
+        // Fallback to localStorage cache if API is unavailable
+        loadFromLocalStorage();
         updatePrioritySelectors();
+        console.warn('Using cached priorities from localStorage - API/Airtable connection failed');
     }
 }
 
@@ -292,21 +306,29 @@ async function updateJobMachine(jobId, newMachine) {
     const job = jobs.find(j => j.id === jobId);
     if (!job) return;
 
+    const oldMachine = job.machine;
     job.machine = newMachine;
-    saveToLocalStorage(); // Save immediately to localStorage
 
     try {
-        await fetch(`${API_BASE_URL}/jobs/${jobId}`, {
+        const response = await fetch(`${API_BASE_URL}/jobs/${jobId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ machine: newMachine })
         });
-    } catch (error) {
-        console.error('Error updating job on server:', error);
-        // Data already saved to localStorage, so it persists
-    }
 
-    renderJobs();
+        if (!response.ok) {
+            throw new Error('Failed to update job in Airtable');
+        }
+
+        saveToLocalStorage(); // Cache successful update
+        renderJobs();
+    } catch (error) {
+        console.error('Error updating job in Airtable:', error);
+        // Revert the change if API call failed
+        job.machine = oldMachine;
+        renderJobs();
+        alert('Failed to update job. Please check your connection to Airtable.');
+    }
 }
 
 // Modal functions
@@ -373,37 +395,42 @@ async function handleJobSubmit(e) {
         id: editingJobId || `job_${Date.now()}`
     };
 
-    // Update local data immediately
-    if (editingJobId) {
-        const index = jobs.findIndex(j => j.id === editingJobId);
-        if (index !== -1) jobs[index] = jobData;
-    } else {
-        jobs.push(jobData);
-    }
-
-    // Save to localStorage immediately for real-time persistence
-    saveToLocalStorage();
-    renderJobs();
-    closeJobModal();
-
-    // Then try to sync with API in background
     try {
+        // Save to Airtable first (primary storage)
+        let response;
         if (editingJobId) {
-            await fetch(`${API_BASE_URL}/jobs/${editingJobId}`, {
+            response = await fetch(`${API_BASE_URL}/jobs/${editingJobId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(jobData)
             });
         } else {
-            await fetch(`${API_BASE_URL}/jobs`, {
+            response = await fetch(`${API_BASE_URL}/jobs`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(jobData)
             });
         }
+
+        if (!response.ok) {
+            throw new Error('Failed to save job to Airtable');
+        }
+
+        // Update local data after successful API save
+        if (editingJobId) {
+            const index = jobs.findIndex(j => j.id === editingJobId);
+            if (index !== -1) jobs[index] = jobData;
+        } else {
+            jobs.push(jobData);
+        }
+
+        saveToLocalStorage(); // Cache to localStorage as backup
+        renderJobs();
+        closeJobModal();
     } catch (error) {
-        console.error('Error syncing job with server:', error);
-        // Data already saved to localStorage, so it persists
+        console.error('Error saving job to Airtable:', error);
+        alert('Failed to save job to Airtable. Please check your connection and try again.');
+        // Don't close modal so user can retry
     }
 }
 
@@ -421,24 +448,28 @@ async function handleSetupSubmit(e) {
         id: `setup_${Date.now()}`
     };
 
-    // Update local data immediately
-    jobs.push(setupData);
-
-    // Save to localStorage immediately for real-time persistence
-    saveToLocalStorage();
-    renderJobs();
-    closeSetupModal();
-
-    // Then try to sync with API in background
     try {
-        await fetch(`${API_BASE_URL}/jobs`, {
+        // Save to Airtable first (primary storage)
+        const response = await fetch(`${API_BASE_URL}/jobs`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(setupData)
         });
+
+        if (!response.ok) {
+            throw new Error('Failed to save setup to Airtable');
+        }
+
+        // Update local data after successful API save
+        jobs.push(setupData);
+
+        saveToLocalStorage(); // Cache to localStorage as backup
+        renderJobs();
+        closeSetupModal();
     } catch (error) {
-        console.error('Error syncing setup with server:', error);
-        // Data already saved to localStorage, so it persists
+        console.error('Error saving setup to Airtable:', error);
+        alert('Failed to save setup to Airtable. Please check your connection and try again.');
+        // Don't close modal so user can retry
     }
 }
 
@@ -446,21 +477,24 @@ async function handleSetupSubmit(e) {
 async function deleteJob(jobId) {
     if (!confirm('Are you sure you want to delete this job?')) return;
 
-    // Update local data immediately
-    jobs = jobs.filter(j => j.id !== jobId);
-
-    // Save to localStorage immediately for real-time persistence
-    saveToLocalStorage();
-    renderJobs();
-
-    // Then try to sync with API in background
     try {
-        await fetch(`${API_BASE_URL}/jobs/${jobId}`, {
+        // Delete from Airtable first (primary storage)
+        const response = await fetch(`${API_BASE_URL}/jobs/${jobId}`, {
             method: 'DELETE'
         });
+
+        if (!response.ok) {
+            throw new Error('Failed to delete job from Airtable');
+        }
+
+        // Update local data after successful API delete
+        jobs = jobs.filter(j => j.id !== jobId);
+
+        saveToLocalStorage(); // Update cache
+        renderJobs();
     } catch (error) {
-        console.error('Error syncing deletion with server:', error);
-        // Data already saved to localStorage, so it persists
+        console.error('Error deleting job from Airtable:', error);
+        alert('Failed to delete job from Airtable. Please check your connection and try again.');
     }
 }
 
@@ -474,22 +508,29 @@ function editJob(jobId) {
 
 // Update priority
 async function updatePriority(machine, priority) {
-    // Update local data immediately
-    machinePriorities[machine] = priority;
+    const oldPriority = machinePriorities[machine];
 
-    // Save to localStorage immediately for real-time persistence
-    saveToLocalStorage();
-
-    // Then try to sync with API in background
     try {
-        await fetch(`${API_BASE_URL}/priorities/${machine}`, {
+        // Update in Airtable first (primary storage)
+        const response = await fetch(`${API_BASE_URL}/priorities/${machine}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ priority })
         });
+
+        if (!response.ok) {
+            throw new Error('Failed to update priority in Airtable');
+        }
+
+        // Update local data after successful API update
+        machinePriorities[machine] = priority;
+        saveToLocalStorage(); // Cache to localStorage as backup
     } catch (error) {
-        console.error('Error syncing priority with server:', error);
-        // Data already saved to localStorage, so it persists
+        console.error('Error updating priority in Airtable:', error);
+        // Revert to old priority if update failed
+        machinePriorities[machine] = oldPriority;
+        updatePrioritySelectors();
+        alert('Failed to update machine priority in Airtable. Please check your connection.');
     }
 }
 
@@ -502,13 +543,27 @@ function updatePrioritySelectors() {
 }
 
 // Clear all
-function handleClearAll() {
-    if (!confirm('Are you sure you want to clear all jobs? This cannot be undone.')) return;
+async function handleClearAll() {
+    if (!confirm('Are you sure you want to clear all jobs? This will delete ALL jobs from Airtable. This cannot be undone!')) return;
 
-    // Update local data immediately
-    jobs = [];
+    try {
+        // Delete all jobs from Airtable (primary storage)
+        const deletePromises = jobs.map(job =>
+            fetch(`${API_BASE_URL}/jobs/${job.id}`, {
+                method: 'DELETE'
+            })
+        );
 
-    // Save to localStorage immediately for real-time persistence
-    saveToLocalStorage();
-    renderJobs();
+        await Promise.all(deletePromises);
+
+        // Update local data after successful deletion
+        jobs = [];
+        saveToLocalStorage(); // Update cache
+        renderJobs();
+    } catch (error) {
+        console.error('Error clearing jobs from Airtable:', error);
+        alert('Failed to clear all jobs from Airtable. Some jobs may not have been deleted. Please refresh and try again.');
+        // Reload from Airtable to see current state
+        loadJobs();
+    }
 }
