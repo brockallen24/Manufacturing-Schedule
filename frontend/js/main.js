@@ -413,15 +413,26 @@ async function handleJobSubmit(e) {
         }
 
         if (!response.ok) {
-            throw new Error('Failed to save job to Airtable');
+            // Try to get detailed error message from API
+            let errorMessage = 'Failed to save job to Airtable';
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.message || errorData.error || errorMessage;
+            } catch (e) {
+                // If parsing error response fails, use default message
+            }
+            throw new Error(errorMessage);
         }
+
+        // Get the saved job data from response
+        const savedData = await response.json();
 
         // Update local data after successful API save
         if (editingJobId) {
             const index = jobs.findIndex(j => j.id === editingJobId);
-            if (index !== -1) jobs[index] = jobData;
+            if (index !== -1) jobs[index] = savedData.job || jobData;
         } else {
-            jobs.push(jobData);
+            jobs.push(savedData.job || jobData);
         }
 
         saveToLocalStorage(); // Cache to localStorage as backup
@@ -429,7 +440,24 @@ async function handleJobSubmit(e) {
         closeJobModal();
     } catch (error) {
         console.error('Error saving job to Airtable:', error);
-        alert('Failed to save job to Airtable. Please check your connection and try again.');
+
+        // Show detailed error message
+        let userMessage = 'Failed to save job to Airtable.\n\n';
+        userMessage += 'Error: ' + error.message + '\n\n';
+
+        // Check if it might be a field-related error
+        if (error.message.includes('INVALID_VALUE_FOR_COLUMN') ||
+            error.message.includes('UNKNOWN_FIELD_NAME') ||
+            error.message.includes('field') ||
+            response && response.status === 422) {
+            userMessage += '⚠️ This might be caused by missing or incorrectly configured fields in your Airtable table.\n\n';
+            userMessage += 'Please run the diagnostic tool: frontend/test-save.html\n';
+            userMessage += 'Or follow the setup guide: AIRTABLE_FIELD_SETUP.md';
+        } else {
+            userMessage += 'Please check your connection and try again.';
+        }
+
+        alert(userMessage);
         // Don't close modal so user can retry
     }
 }
@@ -457,18 +485,46 @@ async function handleSetupSubmit(e) {
         });
 
         if (!response.ok) {
-            throw new Error('Failed to save setup to Airtable');
+            // Try to get detailed error message from API
+            let errorMessage = 'Failed to save setup to Airtable';
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.message || errorData.error || errorMessage;
+            } catch (e) {
+                // If parsing error response fails, use default message
+            }
+            throw new Error(errorMessage);
         }
 
+        // Get the saved setup data from response
+        const savedData = await response.json();
+
         // Update local data after successful API save
-        jobs.push(setupData);
+        jobs.push(savedData.job || setupData);
 
         saveToLocalStorage(); // Cache to localStorage as backup
         renderJobs();
         closeSetupModal();
     } catch (error) {
         console.error('Error saving setup to Airtable:', error);
-        alert('Failed to save setup to Airtable. Please check your connection and try again.');
+
+        // Show detailed error message
+        let userMessage = 'Failed to save setup to Airtable.\n\n';
+        userMessage += 'Error: ' + error.message + '\n\n';
+
+        // Check if it might be a field-related error
+        if (error.message.includes('INVALID_VALUE_FOR_COLUMN') ||
+            error.message.includes('UNKNOWN_FIELD_NAME') ||
+            error.message.includes('field') ||
+            response && response.status === 422) {
+            userMessage += '⚠️ This might be caused by missing or incorrectly configured fields in your Airtable table.\n\n';
+            userMessage += 'Please run the diagnostic tool: frontend/test-save.html\n';
+            userMessage += 'Or follow the setup guide: AIRTABLE_FIELD_SETUP.md';
+        } else {
+            userMessage += 'Please check your connection and try again.';
+        }
+
+        alert(userMessage);
         // Don't close modal so user can retry
     }
 }
