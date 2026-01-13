@@ -395,9 +395,9 @@ async function handleJobSubmit(e) {
         id: editingJobId || `job_${Date.now()}`
     };
 
+    let response; // Declare outside try block so it's accessible in catch
     try {
         // Save to Airtable first (primary storage)
-        let response;
         if (editingJobId) {
             response = await fetch(`${API_BASE_URL}/jobs/${editingJobId}`, {
                 method: 'PUT',
@@ -449,7 +449,7 @@ async function handleJobSubmit(e) {
         if (error.message.includes('INVALID_VALUE_FOR_COLUMN') ||
             error.message.includes('UNKNOWN_FIELD_NAME') ||
             error.message.includes('field') ||
-            response && response.status === 422) {
+            (response && response.status === 422)) {
             userMessage += '⚠️ This might be caused by missing or incorrectly configured fields in your Airtable table.\n\n';
             userMessage += 'Please run the diagnostic tool: frontend/test-save.html\n';
             userMessage += 'Or follow the setup guide: AIRTABLE_FIELD_SETUP.md';
@@ -476,9 +476,10 @@ async function handleSetupSubmit(e) {
         id: `setup_${Date.now()}`
     };
 
+    let response; // Declare outside try block so it's accessible in catch
     try {
         // Save to Airtable first (primary storage)
-        const response = await fetch(`${API_BASE_URL}/jobs`, {
+        response = await fetch(`${API_BASE_URL}/jobs`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(setupData)
@@ -516,7 +517,7 @@ async function handleSetupSubmit(e) {
         if (error.message.includes('INVALID_VALUE_FOR_COLUMN') ||
             error.message.includes('UNKNOWN_FIELD_NAME') ||
             error.message.includes('field') ||
-            response && response.status === 422) {
+            (response && response.status === 422)) {
             userMessage += '⚠️ This might be caused by missing or incorrectly configured fields in your Airtable table.\n\n';
             userMessage += 'Please run the diagnostic tool: frontend/test-save.html\n';
             userMessage += 'Or follow the setup guide: AIRTABLE_FIELD_SETUP.md';
