@@ -13,11 +13,56 @@ let jobs = [];
 let machinePriorities = {};
 let editingJobId = null;
 
+// LocalStorage keys
+const STORAGE_KEYS = {
+    JOBS: 'manufacturingScheduleJobs',
+    PRIORITIES: 'manufacturingSchedulePriorities'
+};
+
+// Save to localStorage
+function saveToLocalStorage() {
+    try {
+        localStorage.setItem(STORAGE_KEYS.JOBS, JSON.stringify(jobs));
+        localStorage.setItem(STORAGE_KEYS.PRIORITIES, JSON.stringify(machinePriorities));
+    } catch (error) {
+        console.error('Error saving to localStorage:', error);
+    }
+}
+
+// Load from localStorage
+function loadFromLocalStorage() {
+    try {
+        const savedJobs = localStorage.getItem(STORAGE_KEYS.JOBS);
+        const savedPriorities = localStorage.getItem(STORAGE_KEYS.PRIORITIES);
+
+        if (savedJobs) {
+            jobs = JSON.parse(savedJobs);
+        }
+
+        if (savedPriorities) {
+            machinePriorities = JSON.parse(savedPriorities);
+        } else {
+            // Initialize default priorities
+            machines.forEach(machine => {
+                machinePriorities[machine] = 'medium';
+            });
+        }
+    } catch (error) {
+        console.error('Error loading from localStorage:', error);
+        // Initialize defaults on error
+        jobs = [];
+        machines.forEach(machine => {
+            machinePriorities[machine] = 'medium';
+        });
+    }
+}
+
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
     initializeBoard();
-    loadJobs();
-    loadPriorities();
+    loadFromLocalStorage(); // Load from localStorage first
+    loadJobs(); // Then try to sync with API (if available)
+    loadPriorities(); // Sync priorities with API (if available)
     setupEventListeners();
 });
 
@@ -115,11 +160,11 @@ async function loadJobs() {
 
         const data = await response.json();
         jobs = data.jobs || [];
+        saveToLocalStorage(); // Save API data to localStorage
         renderJobs();
     } catch (error) {
-        console.error('Error loading jobs:', error);
-        // Fallback to empty array if API not available
-        jobs = [];
+        console.error('Error loading jobs from API:', error);
+        // Use localStorage data (already loaded), just render
         renderJobs();
     }
 }
@@ -132,13 +177,11 @@ async function loadPriorities() {
 
         const data = await response.json();
         machinePriorities = data || {};
+        saveToLocalStorage(); // Save API data to localStorage
         updatePrioritySelectors();
     } catch (error) {
-        console.error('Error loading priorities:', error);
-        // Fallback to default priorities
-        machines.forEach(machine => {
-            machinePriorities[machine] = 'medium';
-        });
+        console.error('Error loading priorities from API:', error);
+        // Use localStorage data (already loaded), just update UI
         updatePrioritySelectors();
     }
 }
@@ -250,6 +293,7 @@ async function updateJobMachine(jobId, newMachine) {
     if (!job) return;
 
     job.machine = newMachine;
+    saveToLocalStorage(); // Save immediately to localStorage
 
     try {
         await fetch(`${API_BASE_URL}/jobs/${jobId}`, {
@@ -257,11 +301,12 @@ async function updateJobMachine(jobId, newMachine) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ machine: newMachine })
         });
-        renderJobs();
     } catch (error) {
-        console.error('Error updating job:', error);
-        renderJobs();
+        console.error('Error updating job on server:', error);
+        // Data already saved to localStorage, so it persists
     }
+
+    renderJobs();
 }
 
 // Modal functions
@@ -328,40 +373,37 @@ async function handleJobSubmit(e) {
         id: editingJobId || `job_${Date.now()}`
     };
 
+    // Update local data immediately
+    if (editingJobId) {
+        const index = jobs.findIndex(j => j.id === editingJobId);
+        if (index !== -1) jobs[index] = jobData;
+    } else {
+        jobs.push(jobData);
+    }
+
+    // Save to localStorage immediately for real-time persistence
+    saveToLocalStorage();
+    renderJobs();
+    closeJobModal();
+
+    // Then try to sync with API in background
     try {
         if (editingJobId) {
-            // Update existing job
             await fetch(`${API_BASE_URL}/jobs/${editingJobId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(jobData)
             });
-            const index = jobs.findIndex(j => j.id === editingJobId);
-            if (index !== -1) jobs[index] = jobData;
         } else {
-            // Create new job
-            const response = await fetch(`${API_BASE_URL}/jobs`, {
+            await fetch(`${API_BASE_URL}/jobs`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(jobData)
             });
-            const data = await response.json();
-            jobs.push(data.job || jobData);
         }
-
-        renderJobs();
-        closeJobModal();
     } catch (error) {
-        console.error('Error saving job:', error);
-        // Fallback to local storage
-        if (editingJobId) {
-            const index = jobs.findIndex(j => j.id === editingJobId);
-            if (index !== -1) jobs[index] = jobData;
-        } else {
-            jobs.push(jobData);
-        }
-        renderJobs();
-        closeJobModal();
+        console.error('Error syncing job with server:', error);
+        // Data already saved to localStorage, so it persists
     }
 }
 
@@ -379,23 +421,24 @@ async function handleSetupSubmit(e) {
         id: `setup_${Date.now()}`
     };
 
+    // Update local data immediately
+    jobs.push(setupData);
+
+    // Save to localStorage immediately for real-time persistence
+    saveToLocalStorage();
+    renderJobs();
+    closeSetupModal();
+
+    // Then try to sync with API in background
     try {
-        const response = await fetch(`${API_BASE_URL}/jobs`, {
+        await fetch(`${API_BASE_URL}/jobs`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(setupData)
         });
-        const data = await response.json();
-        jobs.push(data.job || setupData);
-
-        renderJobs();
-        closeSetupModal();
     } catch (error) {
-        console.error('Error saving setup:', error);
-        // Fallback to local storage
-        jobs.push(setupData);
-        renderJobs();
-        closeSetupModal();
+        console.error('Error syncing setup with server:', error);
+        // Data already saved to localStorage, so it persists
     }
 }
 
@@ -403,17 +446,21 @@ async function handleSetupSubmit(e) {
 async function deleteJob(jobId) {
     if (!confirm('Are you sure you want to delete this job?')) return;
 
+    // Update local data immediately
+    jobs = jobs.filter(j => j.id !== jobId);
+
+    // Save to localStorage immediately for real-time persistence
+    saveToLocalStorage();
+    renderJobs();
+
+    // Then try to sync with API in background
     try {
         await fetch(`${API_BASE_URL}/jobs/${jobId}`, {
             method: 'DELETE'
         });
-        jobs = jobs.filter(j => j.id !== jobId);
-        renderJobs();
     } catch (error) {
-        console.error('Error deleting job:', error);
-        // Fallback to local deletion
-        jobs = jobs.filter(j => j.id !== jobId);
-        renderJobs();
+        console.error('Error syncing deletion with server:', error);
+        // Data already saved to localStorage, so it persists
     }
 }
 
@@ -427,8 +474,13 @@ function editJob(jobId) {
 
 // Update priority
 async function updatePriority(machine, priority) {
+    // Update local data immediately
     machinePriorities[machine] = priority;
 
+    // Save to localStorage immediately for real-time persistence
+    saveToLocalStorage();
+
+    // Then try to sync with API in background
     try {
         await fetch(`${API_BASE_URL}/priorities/${machine}`, {
             method: 'PUT',
@@ -436,7 +488,8 @@ async function updatePriority(machine, priority) {
             body: JSON.stringify({ priority })
         });
     } catch (error) {
-        console.error('Error updating priority:', error);
+        console.error('Error syncing priority with server:', error);
+        // Data already saved to localStorage, so it persists
     }
 }
 
@@ -452,6 +505,10 @@ function updatePrioritySelectors() {
 function handleClearAll() {
     if (!confirm('Are you sure you want to clear all jobs? This cannot be undone.')) return;
 
+    // Update local data immediately
     jobs = [];
+
+    // Save to localStorage immediately for real-time persistence
+    saveToLocalStorage();
     renderJobs();
 }
