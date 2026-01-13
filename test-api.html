@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Connection Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .test-item {
+            margin: 20px 0;
+            padding: 15px;
+            border-left: 4px solid #ddd;
+            background: #f9f9f9;
+        }
+        .test-item.success {
+            border-left-color: #4CAF50;
+            background: #e8f5e9;
+        }
+        .test-item.error {
+            border-left-color: #f44336;
+            background: #ffebee;
+        }
+        .test-item.pending {
+            border-left-color: #ff9800;
+            background: #fff3e0;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        pre {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 13px;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status.ok {
+            background: #4CAF50;
+            color: white;
+        }
+        .status.fail {
+            background: #f44336;
+            color: white;
+        }
+        .status.pending {
+            background: #ff9800;
+            color: white;
+        }
+        .instructions {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #2196F3;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🔍 API Connection Diagnostic Tool</h1>
+
+        <div class="instructions">
+            <strong>Instructions:</strong> Click the buttons below to test each connection.
+            This will help diagnose why saving jobs is failing.
+        </div>
+
+        <button onclick="runAllTests()">Run All Tests</button>
+        <button onclick="location.reload()">Reset</button>
+
+        <hr style="margin: 30px 0;">
+
+        <div id="test1" class="test-item pending">
+            <h3>Test 1: Backend Health Check <span class="status pending" id="status1">PENDING</span></h3>
+            <p>Testing: <code>https://manufacturing-schedule-7575b6f1cdb3.herokuapp.com/health</code></p>
+            <button onclick="test1()">Run Test 1</button>
+            <div id="result1"></div>
+        </div>
+
+        <div id="test2" class="test-item pending">
+            <h3>Test 2: Get Jobs from API <span class="status pending" id="status2">PENDING</span></h3>
+            <p>Testing: <code>https://manufacturing-schedule-7575b6f1cdb3.herokuapp.com/api/jobs</code></p>
+            <button onclick="test2()">Run Test 2</button>
+            <div id="result2"></div>
+        </div>
+
+        <div id="test3" class="test-item pending">
+            <h3>Test 3: Create Test Job <span class="status pending" id="status3">PENDING</span></h3>
+            <p>Testing: POST to <code>/api/jobs</code></p>
+            <button onclick="test3()">Run Test 3</button>
+            <div id="result3"></div>
+        </div>
+
+        <div id="test4" class="test-item pending">
+            <h3>Test 4: Get Machine Priorities <span class="status pending" id="status4">PENDING</span></h3>
+            <p>Testing: <code>https://manufacturing-schedule-7575b6f1cdb3.herokuapp.com/api/priorities</code></p>
+            <button onclick="test4()">Run Test 4</button>
+            <div id="result4"></div>
+        </div>
+
+        <div id="summary" style="margin-top: 30px; padding: 20px; background: #fff3e0; border-radius: 5px; display: none;">
+            <h2>📊 Summary</h2>
+            <div id="summaryContent"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://manufacturing-schedule-7575b6f1cdb3.herokuapp.com';
+
+        async function test1() {
+            updateStatus(1, 'pending', 'TESTING...');
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                const data = await response.json();
+
+                if (response.ok && data.status === 'ok') {
+                    updateStatus(1, 'ok', 'PASS ✓');
+                    showResult(1, 'success', `Backend is RUNNING!<pre>${JSON.stringify(data, null, 2)}</pre>`);
+                } else {
+                    updateStatus(1, 'fail', 'FAIL ✗');
+                    showResult(1, 'error', `Unexpected response:<pre>${JSON.stringify(data, null, 2)}</pre>`);
+                }
+            } catch (error) {
+                updateStatus(1, 'fail', 'FAIL ✗');
+                showResult(1, 'error', `<strong>ERROR:</strong> ${error.message}<br><br>
+                    <strong>Possible causes:</strong><br>
+                    • Backend is not deployed or crashed<br>
+                    • Heroku dyno is not running<br>
+                    • Network connection issue<br><br>
+                    <strong>Fix:</strong> Check Heroku dashboard and redeploy if needed.`);
+            }
+        }
+
+        async function test2() {
+            updateStatus(2, 'pending', 'TESTING...');
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/jobs`);
+                const data = await response.json();
+
+                if (response.ok && data.hasOwnProperty('jobs')) {
+                    updateStatus(2, 'ok', 'PASS ✓');
+                    showResult(2, 'success', `Jobs API working! Found ${data.count} jobs.<pre>${JSON.stringify(data, null, 2)}</pre>`);
+                } else {
+                    updateStatus(2, 'fail', 'FAIL ✗');
+                    showResult(2, 'error', `API returned an error:<pre>${JSON.stringify(data, null, 2)}</pre>
+                        <strong>Check Heroku logs for details.</strong>`);
+                }
+            } catch (error) {
+                updateStatus(2, 'fail', 'FAIL ✗');
+                showResult(2, 'error', `<strong>ERROR:</strong> ${error.message}<br><br>
+                    <strong>Possible causes:</strong><br>
+                    • Airtable tables not set up correctly<br>
+                    • Wrong table names (must be "Jobs" exactly)<br>
+                    • Missing fields in Airtable<br>
+                    • Backend crashed due to Airtable error<br><br>
+                    <strong>Fix:</strong> Check Airtable has "Jobs" table with all required fields.`);
+            }
+        }
+
+        async function test3() {
+            updateStatus(3, 'pending', 'TESTING...');
+            const testJob = {
+                id: 'test_' + Date.now(),
+                type: 'job',
+                jobName: 'API Test Job',
+                workOrder: 'TEST-001',
+                numParts: 100,
+                cycleTime: 30,
+                numCavities: 2,
+                material: 'Steel',
+                totalMaterial: 50,
+                totalHours: 0.42,
+                dueDate: '2026-01-20',
+                percentComplete: 0,
+                machine: '22'
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/jobs`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testJob)
+                });
+                const data = await response.json();
+
+                if (response.ok && response.status === 201) {
+                    updateStatus(3, 'ok', 'PASS ✓');
+                    showResult(3, 'success', `<strong>SUCCESS!</strong> Job created successfully!<pre>${JSON.stringify(data, null, 2)}</pre>
+                        <strong>✓ This means saving SHOULD work!</strong><br>
+                        Check your Airtable base - the test job should be there.`);
+                } else {
+                    updateStatus(3, 'fail', 'FAIL ✗');
+                    showResult(3, 'error', `Failed to create job:<pre>${JSON.stringify(data, null, 2)}</pre>
+                        <strong>This is why saving fails!</strong><br><br>
+                        <strong>Common causes:</strong><br>
+                        • Missing fields in Airtable "Jobs" table<br>
+                        • Wrong field types<br>
+                        • Table name is wrong (must be "Jobs" exactly)<br><br>
+                        <strong>Check Heroku logs for detailed error message.</strong>`);
+                }
+            } catch (error) {
+                updateStatus(3, 'fail', 'FAIL ✗');
+                showResult(3, 'error', `<strong>ERROR:</strong> ${error.message}<br><br>
+                    <strong>This is the root cause of your save failure!</strong><br><br>
+                    <strong>Possible causes:</strong><br>
+                    • CORS blocking the request<br>
+                    • Backend not responding<br>
+                    • Network issue<br><br>
+                    <strong>Fix:</strong> Check ALLOWED_ORIGINS in Heroku Config Vars includes "*" or your domain.`);
+            }
+        }
+
+        async function test4() {
+            updateStatus(4, 'pending', 'TESTING...');
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/priorities`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    updateStatus(4, 'ok', 'PASS ✓');
+                    showResult(4, 'success', `Priorities API working!<pre>${JSON.stringify(data, null, 2)}</pre>`);
+                } else {
+                    updateStatus(4, 'fail', 'FAIL ✗');
+                    showResult(4, 'error', `Error fetching priorities:<pre>${JSON.stringify(data, null, 2)}</pre>`);
+                }
+            } catch (error) {
+                updateStatus(4, 'fail', 'FAIL ✗');
+                showResult(4, 'error', `<strong>ERROR:</strong> ${error.message}<br><br>
+                    <strong>Possible causes:</strong><br>
+                    • "MachinePriorities" table missing in Airtable<br>
+                    • Wrong table name<br><br>
+                    <strong>Fix:</strong> Create "MachinePriorities" table in Airtable.`);
+            }
+        }
+
+        function updateStatus(testNum, status, text) {
+            const statusEl = document.getElementById(`status${testNum}`);
+            const testEl = document.getElementById(`test${testNum}`);
+
+            statusEl.className = `status ${status}`;
+            statusEl.textContent = text;
+
+            testEl.className = `test-item ${status === 'ok' ? 'success' : status === 'fail' ? 'error' : 'pending'}`;
+        }
+
+        function showResult(testNum, type, html) {
+            document.getElementById(`result${testNum}`).innerHTML = html;
+        }
+
+        async function runAllTests() {
+            document.getElementById('summary').style.display = 'none';
+            await test1();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await test2();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await test3();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await test4();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            showSummary();
+        }
+
+        function showSummary() {
+            const status1 = document.getElementById('status1').textContent;
+            const status2 = document.getElementById('status2').textContent;
+            const status3 = document.getElementById('status3').textContent;
+            const status4 = document.getElementById('status4').textContent;
+
+            const passed = [status1, status2, status3, status4].filter(s => s.includes('PASS')).length;
+            const total = 4;
+
+            let summaryHTML = `<strong>Tests Passed: ${passed}/${total}</strong><br><br>`;
+
+            if (passed === total) {
+                summaryHTML += `
+                    <div style="color: #4CAF50; font-size: 18px;">
+                        <strong>✓ ALL TESTS PASSED!</strong><br><br>
+                        Your API is working correctly. If saves still fail in the frontend:
+                        <ol>
+                            <li>Clear browser cache and refresh</li>
+                            <li>Check browser console for specific errors</li>
+                            <li>Verify frontend is using the correct API URL</li>
+                        </ol>
+                    </div>
+                `;
+            } else {
+                summaryHTML += `
+                    <div style="color: #f44336; font-size: 18px;">
+                        <strong>✗ ISSUES FOUND</strong><br><br>
+                        Failed tests indicate the problem:<br><br>
+                `;
+
+                if (!status1.includes('PASS')) {
+                    summaryHTML += `<strong>• Backend is not running</strong> - Redeploy to Heroku<br>`;
+                }
+                if (!status2.includes('PASS')) {
+                    summaryHTML += `<strong>• Jobs API failed</strong> - Check Airtable "Jobs" table setup<br>`;
+                }
+                if (!status3.includes('PASS')) {
+                    summaryHTML += `<strong>• Cannot create jobs</strong> - THIS IS WHY SAVING FAILS! Check Airtable fields<br>`;
+                }
+                if (!status4.includes('PASS')) {
+                    summaryHTML += `<strong>• Priorities API failed</strong> - Check "MachinePriorities" table<br>`;
+                }
+
+                summaryHTML += `
+                    <br>
+                    <strong>Next Steps:</strong>
+                    <ol>
+                        <li>Read the error messages above for each failed test</li>
+                        <li>Fix the issues identified</li>
+                        <li>Run tests again to verify fixes</li>
+                    </ol>
+                    </div>
+                `;
+            }
+
+            document.getElementById('summaryContent').innerHTML = summaryHTML;
+            document.getElementById('summary').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
