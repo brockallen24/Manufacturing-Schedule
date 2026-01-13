@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Airtable Save Diagnostic</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #d32f2f;
+            border-bottom: 3px solid #d32f2f;
+            padding-bottom: 10px;
+        }
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            border-left: 5px solid #ddd;
+        }
+        .status.error {
+            background: #ffebee;
+            border-left-color: #d32f2f;
+        }
+        .status.success {
+            background: #e8f5e9;
+            border-left-color: #4caf50;
+        }
+        .status.warning {
+            background: #fff3e0;
+            border-left-color: #ff9800;
+        }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #1976D2;
+        }
+        button.danger {
+            background: #d32f2f;
+        }
+        button.danger:hover {
+            background: #b71c1c;
+        }
+        pre {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .field-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .field-item {
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        .field-item.missing {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+        .field-item.present {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Airtable Save Diagnostic Tool</h1>
+
+        <div class="status warning">
+            <strong>⚠️ Problem Detected:</strong> Jobs are not saving to Airtable.<br>
+            This tool will identify exactly what's wrong and how to fix it.
+        </div>
+
+        <div class="section">
+            <h2>Step 1: Check Current Airtable Structure</h2>
+            <button onclick="checkCurrentStructure()">Check What Fields Exist</button>
+            <div id="structureResult"></div>
+        </div>
+
+        <div class="section">
+            <h2>Step 2: Test Creating a Job</h2>
+            <button onclick="testCreateJob()">Try to Save a Test Job</button>
+            <div id="createResult"></div>
+        </div>
+
+        <div class="section">
+            <h2>Step 3: Required Fields</h2>
+            <p>Your Airtable "Jobs" table MUST have these fields:</p>
+            <div class="field-list" id="requiredFields"></div>
+        </div>
+
+        <div class="section">
+            <h2>Step 4: Fix Instructions</h2>
+            <div id="fixInstructions"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://manufacturing-schedule-7575b6f1cdb3.herokuapp.com';
+
+        const REQUIRED_FIELDS = [
+            { name: 'id', type: 'Single line text', required: true },
+            { name: 'type', type: 'Single select', required: true, options: ['job', 'setup'] },
+            { name: 'machine', type: 'Single line text', required: true },
+            { name: 'jobName', type: 'Single line text', required: true },
+            { name: 'workOrder', type: 'Single line text', required: true },
+            { name: 'numParts', type: 'Number (integer)', required: true },
+            { name: 'cycleTime', type: 'Number (decimal)', required: true },
+            { name: 'numCavities', type: 'Number (integer)', required: true },
+            { name: 'material', type: 'Single line text', required: true },
+            { name: 'totalMaterial', type: 'Number (decimal)', required: true },
+            { name: 'totalHours', type: 'Number (decimal)', required: true },
+            { name: 'dueDate', type: 'Date', required: true },
+            { name: 'percentComplete', type: 'Number (integer)', required: true }
+        ];
+
+        // Display required fields
+        function displayRequiredFields() {
+            const container = document.getElementById('requiredFields');
+            container.innerHTML = REQUIRED_FIELDS.map(field =>
+                `<div class="field-item">
+                    <strong>${field.name}</strong><br>
+                    <small>${field.type}</small>
+                </div>`
+            ).join('');
+        }
+
+        async function checkCurrentStructure() {
+            const resultDiv = document.getElementById('structureResult');
+            resultDiv.innerHTML = '<p>⏳ Checking Airtable structure...</p>';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/jobs`);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Failed to fetch jobs');
+                }
+
+                let html = '<div class="status success">';
+                html += `<strong>✅ Connection Successful</strong><br>`;
+                html += `Found ${data.count} records in Airtable<br><br>`;
+
+                if (data.count > 0) {
+                    // Analyze first record to see what fields exist
+                    const firstJob = data.jobs[0];
+                    const existingFields = Object.keys(firstJob).filter(key => key !== 'id');
+
+                    html += '<strong>Fields currently in your Airtable table:</strong><br>';
+                    html += '<div class="field-list">';
+
+                    if (existingFields.length === 0) {
+                        html += '<div class="field-item missing">⚠️ No data fields found - only ID</div>';
+                    } else {
+                        existingFields.forEach(field => {
+                            const isRequired = REQUIRED_FIELDS.some(rf => rf.name === field);
+                            html += `<div class="field-item ${isRequired ? 'present' : ''}">${field}</div>`;
+                        });
+                    }
+                    html += '</div><br>';
+
+                    // Check for missing required fields
+                    const missingFields = REQUIRED_FIELDS.filter(rf =>
+                        !existingFields.includes(rf.name)
+                    );
+
+                    if (missingFields.length > 0) {
+                        html += '</div><div class="status error">';
+                        html += `<strong>❌ PROBLEM FOUND: Missing ${missingFields.length} Required Fields</strong><br><br>`;
+                        html += '<strong>These fields are MISSING from your Airtable table:</strong><br>';
+                        html += '<div class="field-list">';
+                        missingFields.forEach(field => {
+                            html += `<div class="field-item missing">${field.name} (${field.type})</div>`;
+                        });
+                        html += '</div>';
+                    } else {
+                        html += '<br><strong>✅ All required fields are present!</strong>';
+                    }
+                } else {
+                    html += '<br><strong>ℹ️ Table is empty - no records to analyze</strong><br>';
+                    html += 'Try creating a test job to see if it works.';
+                }
+
+                html += '</div>';
+
+                // Show raw data
+                html += '<br><strong>Raw API Response:</strong>';
+                html += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+
+                resultDiv.innerHTML = html;
+                generateFixInstructions(data.jobs);
+
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status error">
+                        <strong>❌ Error:</strong> ${error.message}<br><br>
+                        <strong>Possible causes:</strong><br>
+                        • Backend is not running<br>
+                        • Airtable credentials are wrong<br>
+                        • "Jobs" table doesn't exist<br>
+                    </div>
+                `;
+            }
+        }
+
+        async function testCreateJob() {
+            const resultDiv = document.getElementById('createResult');
+            resultDiv.innerHTML = '<p>⏳ Attempting to create test job...</p>';
+
+            const testJob = {
+                id: 'test_diagnostic_' + Date.now(),
+                type: 'job',
+                machine: '22',
+                jobName: 'Diagnostic Test Job',
+                workOrder: 'DIAG-001',
+                numParts: 100,
+                cycleTime: 30,
+                numCavities: 2,
+                material: 'Steel',
+                totalMaterial: 50,
+                totalHours: 0.42,
+                dueDate: '2026-01-20',
+                percentComplete: 0
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/jobs`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testJob)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="status success">
+                            <strong>✅ SUCCESS!</strong> Test job created successfully!<br><br>
+                            <strong>This means:</strong><br>
+                            • Backend is working correctly<br>
+                            • Airtable connection is good<br>
+                            • All required fields exist<br>
+                            • Jobs SHOULD save from your frontend now!<br><br>
+                            <strong>Next:</strong> Check your Airtable base - the test job should be there.<br>
+                            <button class="danger" onclick="deleteTestJob('${testJob.id}')">Delete Test Job</button>
+                        </div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="status error">
+                            <strong>❌ SAVE FAILED - This is why your jobs aren't saving!</strong><br><br>
+                            <strong>Error:</strong> ${data.error || 'Unknown error'}<br>
+                            <strong>Message:</strong> ${data.message || 'No details'}<br><br>
+                            <strong>Most likely cause:</strong><br>
+                            • Missing required fields in Airtable "Jobs" table<br>
+                            • Field types don't match (e.g., text field where number is needed)<br>
+                            • Table name is wrong (must be exactly "Jobs")<br><br>
+                            <strong>Check Heroku logs for detailed error message</strong>
+                        </div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status error">
+                        <strong>❌ Request Failed:</strong> ${error.message}<br><br>
+                        <strong>This error means:</strong><br>
+                        • Backend might be down<br>
+                        • CORS issue<br>
+                        • Network problem<br>
+                    </div>
+                `;
+            }
+        }
+
+        async function deleteTestJob(jobId) {
+            try {
+                await fetch(`${API_BASE_URL}/api/jobs/${jobId}`, {
+                    method: 'DELETE'
+                });
+                alert('Test job deleted from Airtable');
+                location.reload();
+            } catch (error) {
+                alert('Error deleting test job: ' + error.message);
+            }
+        }
+
+        function generateFixInstructions(jobs) {
+            const container = document.getElementById('fixInstructions');
+
+            if (jobs.length === 0) {
+                container.innerHTML = `
+                    <div class="status warning">
+                        <strong>⚠️ Your Airtable "Jobs" table appears to be empty or missing fields.</strong><br><br>
+                        <strong>To fix this, follow these steps:</strong><br><br>
+                        <ol>
+                            <li>Go to: <a href="https://airtable.com/appYjsKjwhJbkwFv5" target="_blank">Your Airtable Base</a></li>
+                            <li>Open the "Jobs" table (create it if it doesn't exist)</li>
+                            <li>Add each field listed in Step 3 above</li>
+                            <li>Make sure field names match EXACTLY (case-sensitive)</li>
+                            <li>Use the correct field types</li>
+                            <li>Come back and click "Try to Save a Test Job" again</li>
+                        </ol>
+                    </div>
+                `;
+                return;
+            }
+
+            const firstJob = jobs[0];
+            const existingFields = Object.keys(firstJob).filter(key => key !== 'id');
+            const missingFields = REQUIRED_FIELDS.filter(rf =>
+                !existingFields.includes(rf.name)
+            );
+
+            if (missingFields.length > 0) {
+                let html = '<div class="status error">';
+                html += '<strong>🔧 REQUIRED FIX:</strong><br><br>';
+                html += `You need to add <strong>${missingFields.length} missing fields</strong> to your Airtable "Jobs" table:<br><br>`;
+                html += '<ol>';
+                html += '<li>Go to: <a href="https://airtable.com/appYjsKjwhJbkwFv5" target="_blank">Your Airtable Base</a></li>';
+                html += '<li>Open the "Jobs" table</li>';
+                html += '<li>Click the <strong>"+"</strong> button to add each missing field:</li>';
+                html += '</ol>';
+                html += '<div class="field-list">';
+                missingFields.forEach(field => {
+                    html += `<div class="field-item missing">
+                        <strong>${field.name}</strong><br>
+                        Type: ${field.type}
+                        ${field.options ? '<br>Options: ' + field.options.join(', ') : ''}
+                    </div>`;
+                });
+                html += '</div>';
+                html += '<br><strong>After adding these fields, click "Try to Save a Test Job" again!</strong>';
+                html += '</div>';
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = `
+                    <div class="status success">
+                        <strong>✅ All required fields appear to be present!</strong><br><br>
+                        If jobs still aren't saving, check:<br>
+                        • Field types are correct (Number vs Text)<br>
+                        • Table name is exactly "Jobs" (capital J)<br>
+                        • No duplicate field names<br>
+                    </div>
+                `;
+            }
+        }
+
+        // Initialize
+        displayRequiredFields();
+    </script>
+</body>
+</html>
