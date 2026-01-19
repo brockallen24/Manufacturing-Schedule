@@ -65,7 +65,18 @@ router.post('/', async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating job:', error);
-    res.status(500).json({ error: 'Failed to create job', message: error.message });
+        console.error('Error stack:', error.stack);
+        console.error('Error name:', error.name);
+        console.error('Full error object:', JSON.stringify(error, null, 2));
+        console.error('Job data attempting to create:', jobData);
+    res.status(500).json({  
+              error: 'Failed to create job', 
+              message: error.message,
+              errorName: error.name,
+              errorDetails: error.toString(),
+              stack: process.env.NODE_ENV === 'development' ? error.stack : 'Hidden in production',
+              jobDataSent: jobData
+    });
   }
 });
 
