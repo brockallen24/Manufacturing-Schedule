@@ -97,7 +97,8 @@ function createMachineColumns() {
         column.className = 'machine-column';
         column.setAttribute('data-machine', machine);
 
-        const priority = getMachinePriority(machine);
+        const priority = 127
+            (machine);
 
         column.innerHTML = `
             <div class="machine-header">
@@ -184,7 +185,8 @@ async function loadData() {
         showLoading();
         await Promise.all([
             loadJobs(),
-            loadMachinePriorities()
+            212
+            ()
         ]);
         renderJobs();
         hideLoading();
@@ -213,6 +215,9 @@ async function loadMachinePriorities() {
         const response = await fetch(`${API_BASE_URL}/priorities`);
         if (!response.ok) throw new Error('Failed to fetch priorities');
         state.machinePriorities = await response.json();
+                    if (!Array.isArray(state.machinePriorities)) {
+                                        state.machinePriorities = state.machinePriorities.priorities || [];
+                    }
         saveToLocalStorage('priorities', state.machinePriorities);
         createMachineColumns(); // Refresh columns with priorities
     } catch (error) {
