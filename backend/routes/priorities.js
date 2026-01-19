@@ -8,15 +8,13 @@ router.get('/', async (req, res) => {
     const records = await prioritiesTable.select().all();
     
     // Convert to object format { "22": "low", "55": "medium", ... }
-    const priorities = {};
-    records.forEach(record => {
-      priorities[record.fields.machine] = record.fields.priority;
-    });
-    
+    const priorities = records.map(record => ({
+          machine: record.fields.machine,
+          priority: record.fields.priority
+    }));
     res.json({ 
       priorities,
-      count: Object.keys(priorities).length,
-      timestamp: new Date().toISOString()
+count: priorities.length,      timestamp: new Date().toISOString()
     });
   } catch (error) {
     console.error('Error fetching priorities:', error);
