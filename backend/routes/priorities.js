@@ -9,8 +9,7 @@ router.get('/', async (req, res) => {
     
     // Convert to object format { "22": "low", "55": "medium", ... }
     const priorities = records.map(record => ({
-          machine: record.fields.machine,
-          priority: record.fields.priority
+    machine: record.fields.Name,          priority: record.fields.priority
     }));
     res.json({ 
       priorities,
