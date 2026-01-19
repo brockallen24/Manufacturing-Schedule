@@ -5,9 +5,8 @@ const { jobsTable } = require('../config/airtable');
 // GET all jobs
 router.get('/', async (req, res) => {
   try {
-    const records = await jobsTable.select({
-      sort: [{ field: 'createdAt', direction: 'asc' }]
-    }).all();
+    const records = await jobsTable.select()
+    .all();
     
     const jobs = records.map(record => ({
       id: record.id,
