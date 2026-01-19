@@ -97,8 +97,7 @@ function createMachineColumns() {
         column.className = 'machine-column';
         column.setAttribute('data-machine', machine);
 
-        const priority = 127
-            (machine);
+        const priority = getMachinePriority(machine);
 
         column.innerHTML = `
             <div class="machine-header">
