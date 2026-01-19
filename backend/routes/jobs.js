@@ -45,21 +45,16 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const jobData = req.body;
-    
     // Validate required fields
-    if (!jobData.machine) {
-      return res.status(400).
-        
-            // Map frontend field names to Airtable field names
-            const airtableData = {
-              Name: jobData.jobName,
-              Notes: jobData.workOrder,
-              dueDate: jobData.dueDate
-      };hjson({ error: 'Machine is required' });
+        if (!jobData.machine) {
+                return res.status(400).json({ error: 'Machine is required' });
+        }
+
+        const records = await jobsTable.create([
+          { fields: jobData }
+              ]);
     }
     
-    const records = await jobsTable.create([
-      { fields: airtableData }    ]);
     
     res.status(201).json({ 
       job: {
