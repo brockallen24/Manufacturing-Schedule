@@ -48,12 +48,18 @@ router.post('/', async (req, res) => {
     
     // Validate required fields
     if (!jobData.machine) {
-      return res.status(400).json({ error: 'Machine is required' });
+      return res.status(400).
+        
+            // Map frontend field names to Airtable field names
+            const airtableData = {
+              Name: jobData.jobName,
+              Notes: jobData.workOrder,
+              dueDate: jobData.dueDate
+      };hjson({ error: 'Machine is required' });
     }
     
     const records = await jobsTable.create([
-      { fields: jobData }
-    ]);
+      { fields: airtableData }    ]);
     
     res.status(201).json({ 
       job: {
@@ -75,8 +81,7 @@ router.post('/', async (req, res) => {
               errorName: error.name,
               errorDetails: error.toString(),
               stack: process.env.NODE_ENV === 'development' ? error.stack : 'Hidden in production',
-              jobDataSent: jobData
-    });
+      jobDataSent: airtableData    });
   }
 });
 
