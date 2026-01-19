@@ -201,8 +201,8 @@ async function loadJobs() {
     try {
         const response = await fetch(`${API_BASE_URL}/jobs`);
         if (!response.ok) throw new Error('Failed to fetch jobs');
-        state.jobs = await response.json();
-        saveToLocalStorage('jobs', state.jobs);
+            const jobsData = await response.json();
+                    state.jobs = jobsData.jobs || jobsData || [];
     } catch (error) {
         console.error('Error loading jobs:', error);
         throw error;
