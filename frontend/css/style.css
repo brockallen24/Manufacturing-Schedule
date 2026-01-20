@@ -624,10 +624,26 @@ form {
     }
 
     .job-card {
-        background: white !important;
-        color: #000 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
         border: 1px solid #000;
         box-shadow: none;
+    }
+
+    /* Preserve setup/maintenance colors in print */
+    .job-card.setup-card.tool-ready,
+    .job-card.setup-card.tool-not-ready {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+    }
+
+    /* Preserve priority colors in print */
+    .machine-priority {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
     }
 
     .modal {
