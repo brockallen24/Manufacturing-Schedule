@@ -211,6 +211,15 @@ header h1 i {
     background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
 }
 
+/* Tool Ready Status Colors */
+.job-card.setup-card.tool-ready {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.job-card.setup-card.tool-not-ready {
+    background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+}
+
 .job-header {
     display: flex;
     justify-content: space-between;

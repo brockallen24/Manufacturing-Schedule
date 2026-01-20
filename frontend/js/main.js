@@ -254,7 +254,15 @@ function renderJobs() {
 // Create Job Card
 function createJobCard(job) {
     const card = document.createElement('div');
-    card.className = job.type === 'setup' ? 'job-card setup-card' : 'job-card';
+
+    // Add conditional class based on toolReady status for setup cards
+    if (job.type === 'setup') {
+        const readyClass = job.toolReady === 'yes' ? 'tool-ready' : 'tool-not-ready';
+        card.className = `job-card setup-card ${readyClass}`;
+    } else {
+        card.className = 'job-card';
+    }
+
     card.setAttribute('draggable', 'true');
     card.setAttribute('data-job-id', job.id);
 
