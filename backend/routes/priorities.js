@@ -50,29 +50,34 @@ router.get('/:machine', async (req, res) => {
 router.put('/:machine', async (req, res) => {
   try {
     const { priority } = req.body;
-    
+    console.log(`📝 Updating priority for machine: ${req.params.machine} to: ${priority}`);
+
     if (!priority) {
       return res.status(400).json({ error: 'Priority is required' });
     }
-    
+
     // Validate priority value
     const validPriorities = ['low', 'medium', 'high', 'critical'];
     if (!validPriorities.includes(priority)) {
-      return res.status(400).json({ 
-        error: 'Invalid priority', 
-        validValues: validPriorities 
+      console.log(`❌ Invalid priority value: ${priority}`);
+      return res.status(400).json({
+        error: 'Invalid priority',
+        validValues: validPriorities
       });
     }
-    
+
     // Find existing record
     const existingRecords = await prioritiesTable.select({
       filterByFormula: `{Name} = '${req.params.machine}'`
     }).firstPage();
-    
+
+    console.log(`🔍 Found ${existingRecords.length} existing records for machine ${req.params.machine}`);
+
     let record;
-    
+
     if (existingRecords.length > 0) {
       // Update existing record
+      console.log(`🔄 Updating existing record ${existingRecords[0].id} with priority: ${priority}`);
       const updated = await prioritiesTable.update([
         {
           id: existingRecords[0].id,
@@ -80,8 +85,10 @@ router.put('/:machine', async (req, res) => {
         }
       ]);
       record = updated[0];
+      console.log(`✅ Update successful. New priority: ${record.fields.priority}`);
     } else {
       // Create new record
+      console.log(`➕ Creating new record for machine ${req.params.machine} with priority: ${priority}`);
       const created = await prioritiesTable.create([
         {
           fields: {
@@ -91,8 +98,9 @@ router.put('/:machine', async (req, res) => {
         }
       ]);
       record = created[0];
+      console.log(`✅ Creation successful. Priority: ${record.fields.priority}`);
     }
-    
+
     res.json({
       machine: record.fields.Name,
       priority: record.fields.priority,
@@ -100,7 +108,8 @@ router.put('/:machine', async (req, res) => {
       message: 'Priority updated successfully'
     });
   } catch (error) {
-    console.error('Error updating priority:', error);
+    console.error('❌ Error updating priority:', error);
+    console.error('Error details:', JSON.stringify(error, null, 2));
     res.status(500).json({ error: 'Failed to update priority', message: error.message });
   }
 });

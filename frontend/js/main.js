@@ -563,6 +563,8 @@ window.cyclePriority = async function(machine) {
     const nextIndex = (currentIndex + 1) % priorityLevels.length;
     const newPriority = priorityLevels[nextIndex];
 
+    console.log(`Cycling priority for ${machine}: ${currentPriority} → ${newPriority}`);
+
     try {
         const response = await fetch(`${API_BASE_URL}/priorities/${machine}`, {
             method: 'PUT',
@@ -572,8 +574,12 @@ window.cyclePriority = async function(machine) {
 
         if (!response.ok) {
             const errorData = await response.json();
+            console.error('Priority update failed:', errorData);
             throw new Error(errorData.message || 'Failed to update priority');
         }
+
+        const result = await response.json();
+        console.log('Priority update successful:', result);
 
         // Reload priorities and refresh display
         await loadMachinePriorities();
@@ -583,7 +589,7 @@ window.cyclePriority = async function(machine) {
         showToast(`${machine} priority updated to ${newPriority}`, 'success');
     } catch (error) {
         console.error('Error updating priority:', error);
-        showToast('Failed to update priority', 'error');
+        showToast(`Failed to update priority: ${error.message}`, 'error');
     }
 };
 
