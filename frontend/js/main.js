@@ -275,7 +275,7 @@ function calculateMaterialSummary() {
 
     console.log('📋 Processing', orderedJobs.length, 'ordered jobs');
 
-    orderedJobs.forEach(job => {
+    orderedJobs.forEach((job, index) => {
         const material = job.material || 'Unknown';
         const totalHours = parseFloat(job.totalHours) || 0;
         const totalMaterial = parseFloat(job.totalMaterial) || 0;
@@ -290,36 +290,40 @@ function calculateMaterialSummary() {
         const jobStartHour = cumulativeHours;
         const jobEndHour = cumulativeHours + totalHours;
 
+        console.log(`Job ${index + 1}: ${job.jobName || job.toolNumber}, Material: ${material}, Hours: ${totalHours}, Cumulative: ${jobStartHour} → ${jobEndHour}`);
+
         // Job entirely in week 1 (0-168)
         if (jobEndHour <= 168) {
             summary[material].week1 += totalMaterial;
+            console.log(`  → All in Week 1: ${totalMaterial} lbs`);
         }
         // Job entirely in week 2 (169-336)
         else if (jobStartHour >= 169) {
             summary[material].week2 += totalMaterial;
+            console.log(`  → All in Week 2: ${totalMaterial} lbs`);
         }
-        // Job spans both weeks - split proportionally
-        else if (jobStartHour < 168 && jobEndHour > 168) {
-            const hoursInWeek1 = 168 - jobStartHour;
-            const hoursInWeek2 = jobEndHour - 168;
-            const week1Ratio = hoursInWeek1 / totalHours;
-            const week2Ratio = hoursInWeek2 / totalHours;
+        // Job spans the boundary between week 1 and week 2
+        else if (jobStartHour < 169 && jobEndHour > 168) {
+            // Calculate hours in each range
+            const week1End = Math.min(jobEndHour, 168);
+            const week2Start = Math.max(jobStartHour, 169);
 
-            summary[material].week1 += totalMaterial * week1Ratio;
-            summary[material].week2 += totalMaterial * week2Ratio;
-        }
-        // Job starts in week 1 but we're already past 168
-        else if (jobStartHour < 169 && jobEndHour > 169) {
-            const hoursInWeek1 = Math.max(0, 168 - jobStartHour);
-            const hoursInWeek2 = jobEndHour - Math.max(169, jobStartHour);
+            const hoursInWeek1 = week1End - jobStartHour;
+            const hoursInWeek2 = Math.max(0, jobEndHour - week2Start);
+
+            console.log(`  → Spans both weeks: ${hoursInWeek1} hrs in Week 1, ${hoursInWeek2} hrs in Week 2`);
 
             if (hoursInWeek1 > 0) {
                 const week1Ratio = hoursInWeek1 / totalHours;
-                summary[material].week1 += totalMaterial * week1Ratio;
+                const week1Material = totalMaterial * week1Ratio;
+                summary[material].week1 += week1Material;
+                console.log(`    Week 1: ${week1Material.toFixed(2)} lbs (${(week1Ratio * 100).toFixed(1)}%)`);
             }
             if (hoursInWeek2 > 0) {
                 const week2Ratio = hoursInWeek2 / totalHours;
-                summary[material].week2 += totalMaterial * week2Ratio;
+                const week2Material = totalMaterial * week2Ratio;
+                summary[material].week2 += week2Material;
+                console.log(`    Week 2: ${week2Material.toFixed(2)} lbs (${(week2Ratio * 100).toFixed(1)}%)`);
             }
         }
 
