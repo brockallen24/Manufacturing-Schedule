@@ -98,6 +98,7 @@ function createMachineColumns() {
         column.setAttribute('data-machine', machine);
 
         const priority = getMachinePriority(machine);
+        const totalMaterial = calculateMachineMaterial(machine);
 
         column.innerHTML = `
             <div class="machine-header">
@@ -107,6 +108,10 @@ function createMachineColumns() {
                 </div>
                 <div class="machine-priority priority-${priority}" data-machine="${machine}" style="cursor: pointer;" title="Click to change priority">
                     Priority: ${priority}
+                </div>
+                <div class="machine-total-material">
+                    <i class="fas fa-weight-hanging"></i>
+                    ${totalMaterial} lbs
                 </div>
             </div>
             <div class="jobs-container" data-machine="${machine}">
@@ -136,6 +141,15 @@ function createMachineColumns() {
 function getMachinePriority(machine) {
     const priority = state.machinePriorities.find(p => p.machine === machine);
     return priority ? priority.priority : 'N/A';
+}
+
+// Calculate total material for a machine
+function calculateMachineMaterial(machine) {
+    const machineJobs = state.jobs.filter(job => job.machine === machine);
+    const total = machineJobs.reduce((sum, job) => {
+        return sum + (parseFloat(job.totalMaterial) || 0);
+    }, 0);
+    return total.toFixed(2);
 }
 
 // Setup Drag and Drop

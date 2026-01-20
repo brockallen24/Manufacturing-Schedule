@@ -209,6 +209,22 @@ header h1 i {
     }
 }
 
+.machine-total-material {
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.machine-total-material i {
+    font-size: 11px;
+}
+
 .jobs-container {
     min-height: 300px;
     display: flex;
@@ -641,6 +657,13 @@ form {
 
     /* Preserve priority colors in print */
     .machine-priority {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+    }
+
+    /* Preserve material total colors in print */
+    .machine-total-material {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
         color-adjust: exact !important;
