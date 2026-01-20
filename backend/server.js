@@ -12,6 +12,19 @@ const prioritiesRouter = require('./routes/priorities');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Environment variable check and warnings
+console.log('🔍 Environment Check:');
+console.log('  AIRTABLE_API_KEY:', process.env.AIRTABLE_API_KEY ? '✓ Set' : '✗ NOT SET');
+console.log('  AIRTABLE_BASE_ID:', process.env.AIRTABLE_BASE_ID ? '✓ Set' : '✗ NOT SET');
+console.log('  ALLOWED_ORIGINS:', process.env.ALLOWED_ORIGINS || 'Not set (will allow all origins)');
+console.log('  PORT:', PORT);
+
+if (!process.env.AIRTABLE_API_KEY || !process.env.AIRTABLE_BASE_ID) {
+  console.warn('⚠️  WARNING: Airtable credentials not configured!');
+  console.warn('   Set AIRTABLE_API_KEY and AIRTABLE_BASE_ID environment variables');
+  console.warn('   API endpoints will fail until these are configured');
+}
+
 // Middleware
 app.use(helmet({
       contentSecurityPolicy: {
@@ -25,12 +38,21 @@ app.use(helmet({
       },
 }));
 
-// CORS configuration
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:8000'];
-app.use(cors({
-      origin: allowedOrigins,
-      credentials: true
-}));
+// CORS configuration - Allow all origins if ALLOWED_ORIGINS not set (for Heroku)
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',');
+if (allowedOrigins) {
+  console.log('🔒 CORS: Restricting to allowed origins:', allowedOrigins);
+  app.use(cors({
+    origin: allowedOrigins,
+    credentials: true
+  }));
+} else {
+  console.log('🌐 CORS: Allowing all origins (ALLOWED_ORIGINS not set)');
+  app.use(cors({
+    origin: true,  // Allow all origins when env var not set
+    credentials: true
+  }));
+}
 
 app.use(express.json());
 app.use(morgan('combined'));
