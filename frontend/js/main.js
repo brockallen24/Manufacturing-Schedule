@@ -140,6 +140,7 @@ function createMaterialSummaryColumn(scheduleBoard) {
     const summary = calculateMaterialSummary();
     const column = document.createElement('div');
     column.className = 'machine-column summary-column';
+    column.id = 'material-summary-column';
 
     let summaryHTML = `
         <div class="machine-header">
@@ -187,6 +188,58 @@ function createMaterialSummaryColumn(scheduleBoard) {
     scheduleBoard.appendChild(column);
 }
 
+// Update Material Summary (called after jobs are rendered)
+function updateMaterialSummary() {
+    const summaryColumn = document.getElementById('material-summary-column');
+    if (!summaryColumn) {
+        // If summary column doesn't exist, create it
+        const scheduleBoard = document.getElementById('scheduleBoard');
+        if (scheduleBoard) {
+            createMaterialSummaryColumn(scheduleBoard);
+        }
+        return;
+    }
+
+    const summary = calculateMaterialSummary();
+    const summaryContainer = summaryColumn.querySelector('.summary-container');
+    if (!summaryContainer) return;
+
+    let summaryHTML = '';
+
+    // Sort materials alphabetically
+    const materials = Object.keys(summary).sort();
+
+    if (materials.length === 0) {
+        summaryHTML = `
+            <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <p>No materials scheduled</p>
+            </div>
+        `;
+    } else {
+        materials.forEach(material => {
+            const week1 = summary[material].week1.toFixed(2);
+            const week2 = summary[material].week2.toFixed(2);
+
+            summaryHTML += `
+                <div class="summary-card">
+                    <div class="summary-material-name">${material}</div>
+                    <div class="summary-detail">
+                        <span class="summary-label">0-168 hrs:</span>
+                        <span class="summary-value">${week1} lbs</span>
+                    </div>
+                    <div class="summary-detail">
+                        <span class="summary-label">169-336 hrs:</span>
+                        <span class="summary-value">${week2} lbs</span>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    summaryContainer.innerHTML = summaryHTML;
+}
+
 // Get Machine Priority
 function getMachinePriority(machine) {
     const priority = state.machinePriorities.find(p => p.machine === machine);
@@ -197,6 +250,8 @@ function getMachinePriority(machine) {
 function calculateMaterialSummary() {
     const summary = {};
     let cumulativeHours = 0;
+
+    console.log('📊 Calculating material summary for', state.jobs.length, 'jobs');
 
     // Process jobs in order (by machine, then any remaining jobs)
     const orderedJobs = [];
@@ -217,6 +272,8 @@ function calculateMaterialSummary() {
             orderedJobs.push(job);
         }
     });
+
+    console.log('📋 Processing', orderedJobs.length, 'ordered jobs');
 
     orderedJobs.forEach(job => {
         const material = job.material || 'Unknown';
@@ -268,6 +325,9 @@ function calculateMaterialSummary() {
 
         cumulativeHours = jobEndHour;
     });
+
+    console.log('✅ Material summary calculated:', summary);
+    console.log('📦 Materials found:', Object.keys(summary));
 
     return summary;
 }
@@ -392,6 +452,9 @@ function renderJobs() {
             container.appendChild(jobCard);
         }
     });
+
+    // Update material summary after rendering jobs
+    updateMaterialSummary();
 }
 
 // Create Job Card
