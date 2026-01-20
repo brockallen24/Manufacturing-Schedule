@@ -2,19 +2,38 @@ const express = require('express');
 const router = express.Router();
 const { jobsTable } = require('../config/airtable');
 
+// Helper function to map Airtable fields to frontend format
+function mapAirtableToFrontend(record) {
+  return {
+    id: record.id,
+    jobName: record.fields['Name'],
+    workOrder: record.fields['Work Order'],
+    numParts: record.fields['Num Parts'],
+    cycleTime: record.fields['Cycle Time'],
+    numCavities: record.fields['Num Cavities'],
+    material: record.fields['Material'],
+    totalMaterial: record.fields['Total Material'],
+    totalHours: record.fields['Total Hours'],
+    dueDate: record.fields['Due Date'],
+    percentComplete: record.fields['Percent Complete'],
+    machine: record.fields['Machine'],
+    type: record.fields['Type'],
+    toolNumber: record.fields['Tool Number'],
+    toolReady: record.fields['Tool Ready'],
+    notes: record.fields['Notes']
+  };
+}
+
 // GET all jobs
 router.get('/', async (req, res) => {
   try {
     const records = await jobsTable.select()
     .all();
-    
-    const jobs = records.map(record => ({
-      id: record.id,
-      ...record.fields
-    }));
-    
-    res.json({ 
-      jobs, 
+
+    const jobs = records.map(record => mapAirtableToFrontend(record));
+
+    res.json({
+      jobs,
       count: jobs.length,
       timestamp: new Date().toISOString()
     });
@@ -28,12 +47,9 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const record = await jobsTable.find(req.params.id);
-    
-    res.json({ 
-      job: {
-        id: record.id,
-        ...record.fields
-      }
+
+    res.json({
+      job: mapAirtableToFrontend(record)
     });
   } catch (error) {
     console.error('Error fetching job:', error);
@@ -50,15 +66,40 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Machine is required' });
     }
 
+    // Map frontend field names to Airtable field names
+    const airtableFields = {
+      'Name': jobData.jobName,
+      'Work Order': jobData.workOrder,
+      'Num Parts': jobData.numParts,
+      'Cycle Time': jobData.cycleTime,
+      'Num Cavities': jobData.numCavities,
+      'Material': jobData.material,
+      'Total Material': jobData.totalMaterial,
+      'Total Hours': jobData.totalHours,
+      'Due Date': jobData.dueDate,
+      'Percent Complete': jobData.percentComplete,
+      'Machine': jobData.machine,
+      'Type': jobData.type,
+      'Tool Number': jobData.toolNumber,
+      'Tool Ready': jobData.toolReady,
+      'Notes': jobData.notes
+    };
+
+    // Remove undefined fields
+    Object.keys(airtableFields).forEach(key => {
+      if (airtableFields[key] === undefined) {
+        delete airtableFields[key];
+      }
+    });
+
+    console.log('Creating job with mapped fields:', airtableFields);
+
     const records = await jobsTable.create([
-      { fields: jobData }
+      { fields: airtableFields }
     ]);
 
-    res.status(201).json({ 
-      job: {
-        id: records[0].id,
-        ...records[0].fields
-      },
+    res.status(201).json({
+      job: mapAirtableToFrontend(records[0]),
       id: records[0].id,
       message: 'Job created successfully'
     });
@@ -83,19 +124,42 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const jobData = req.body;
-    
+
+    // Map frontend field names to Airtable field names
+    const airtableFields = {
+      'Name': jobData.jobName,
+      'Work Order': jobData.workOrder,
+      'Num Parts': jobData.numParts,
+      'Cycle Time': jobData.cycleTime,
+      'Num Cavities': jobData.numCavities,
+      'Material': jobData.material,
+      'Total Material': jobData.totalMaterial,
+      'Total Hours': jobData.totalHours,
+      'Due Date': jobData.dueDate,
+      'Percent Complete': jobData.percentComplete,
+      'Machine': jobData.machine,
+      'Type': jobData.type,
+      'Tool Number': jobData.toolNumber,
+      'Tool Ready': jobData.toolReady,
+      'Notes': jobData.notes
+    };
+
+    // Remove undefined fields
+    Object.keys(airtableFields).forEach(key => {
+      if (airtableFields[key] === undefined) {
+        delete airtableFields[key];
+      }
+    });
+
     const records = await jobsTable.update([
-      { 
-        id: req.params.id, 
-        fields: jobData 
+      {
+        id: req.params.id,
+        fields: airtableFields
       }
     ]);
-    
-    res.json({ 
-      job: {
-        id: records[0].id,
-        ...records[0].fields
-      },
+
+    res.json({
+      job: mapAirtableToFrontend(records[0]),
       message: 'Job updated successfully'
     });
   } catch (error) {
@@ -108,19 +172,42 @@ router.put('/:id', async (req, res) => {
 router.patch('/:id', async (req, res) => {
   try {
     const updates = req.body;
-    
+
+    // Map frontend field names to Airtable field names
+    const airtableFields = {
+      'Name': updates.jobName,
+      'Work Order': updates.workOrder,
+      'Num Parts': updates.numParts,
+      'Cycle Time': updates.cycleTime,
+      'Num Cavities': updates.numCavities,
+      'Material': updates.material,
+      'Total Material': updates.totalMaterial,
+      'Total Hours': updates.totalHours,
+      'Due Date': updates.dueDate,
+      'Percent Complete': updates.percentComplete,
+      'Machine': updates.machine,
+      'Type': updates.type,
+      'Tool Number': updates.toolNumber,
+      'Tool Ready': updates.toolReady,
+      'Notes': updates.notes
+    };
+
+    // Remove undefined fields
+    Object.keys(airtableFields).forEach(key => {
+      if (airtableFields[key] === undefined) {
+        delete airtableFields[key];
+      }
+    });
+
     const records = await jobsTable.update([
-      { 
-        id: req.params.id, 
-        fields: updates 
+      {
+        id: req.params.id,
+        fields: airtableFields
       }
     ]);
-    
-    res.json({ 
-      job: {
-        id: records[0].id,
-        ...records[0].fields
-      },
+
+    res.json({
+      job: mapAirtableToFrontend(records[0]),
       message: 'Job updated successfully'
     });
   } catch (error) {
@@ -148,17 +235,13 @@ router.delete('/:id', async (req, res) => {
 router.get('/machine/:machineName', async (req, res) => {
   try {
     const records = await jobsTable.select({
-      filterByFormula: `{machine} = '${req.params.machineName}'`,
-      sort: [{ field: 'createdAt', direction: 'asc' }]
+      filterByFormula: `{Machine} = '${req.params.machineName}'`
     }).all();
-    
-    const jobs = records.map(record => ({
-      id: record.id,
-      ...record.fields
-    }));
-    
-    res.json({ 
-      jobs, 
+
+    const jobs = records.map(record => mapAirtableToFrontend(record));
+
+    res.json({
+      jobs,
       count: jobs.length,
       machine: req.params.machineName
     });
