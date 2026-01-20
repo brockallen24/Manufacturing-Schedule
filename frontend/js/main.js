@@ -184,8 +184,7 @@ async function loadData() {
         showLoading();
         await Promise.all([
             loadJobs(),
-            212
-            ()
+            loadMachinePriorities()
         ]);
         renderJobs();
         hideLoading();
