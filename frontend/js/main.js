@@ -287,10 +287,10 @@ function createJobCard(job) {
             <div class="job-details">
                 <div class="job-detail">
                     <i class="fas fa-hourglass-half"></i>
-                    <span>${job.totalHours || 0} hrs</span>
+                    <span>${job.setupHours || 0} hrs</span>
                 </div>
             </div>
-            ${job.notes ? `<div class="job-detail"><i class="fas fa-sticky-note"></i> ${job.notes}</div>` : ''}
+            ${job.setupNotes ? `<div class="job-detail"><i class="fas fa-sticky-note"></i> ${job.setupNotes}</div>` : ''}
             <div class="progress-bar">
                 <div class="progress-fill" style="width: ${job.percentComplete || 0}%"></div>
             </div>
@@ -390,8 +390,8 @@ function openSetupModal(jobId = null) {
         if (job) {
             document.getElementById('toolNumber').value = job.toolNumber || '';
             document.getElementById('toolReady').value = job.toolReady || '';
-            document.getElementById('setupHours').value = job.totalHours || '';
-            document.getElementById('setupNotes').value = job.notes || '';
+            document.getElementById('setupHours').value = job.setupHours || '';
+            document.getElementById('setupNotes').value = job.setupNotes || '';
             document.getElementById('setupPercentComplete').value = job.percentComplete || 0;
             document.getElementById('setupPercentCompleteValue').textContent = job.percentComplete || 0;
             document.getElementById('setupMachineSelect').value = job.machine || '';
@@ -452,8 +452,8 @@ async function handleSetupSubmit(e) {
         type: 'setup',
         toolNumber: document.getElementById('toolNumber').value,
         toolReady: document.getElementById('toolReady').value,
-        totalHours: parseFloat(document.getElementById('setupHours').value),
-        notes: document.getElementById('setupNotes').value,
+        setupHours: parseFloat(document.getElementById('setupHours').value),
+        setupNotes: document.getElementById('setupNotes').value,
         percentComplete: parseInt(document.getElementById('setupPercentComplete').value),
         machine: document.getElementById('setupMachineSelect').value
     };
