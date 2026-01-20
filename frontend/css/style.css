@@ -315,8 +315,17 @@ header h1 i {
 }
 
 .job-card.dragging {
-    opacity: 0.5;
+    opacity: 0.4;
     cursor: grabbing;
+    transform: scale(0.95);
+}
+
+.job-card.drag-over-top {
+    border-top: 3px solid #4ade80;
+}
+
+.job-card.drag-over-bottom {
+    border-bottom: 3px solid #4ade80;
 }
 
 .job-card.setup-card {

@@ -334,51 +334,143 @@ function calculateMaterialSummary() {
 
 // Setup Drag and Drop
 function setupDragAndDrop(container) {
-    container.addEventListener('dragover', handleDragOver);
-    container.addEventListener('drop', handleDrop);
+    container.addEventListener('dragover', handleContainerDragOver);
+    container.addEventListener('drop', handleContainerDrop);
     container.addEventListener('dragleave', handleDragLeave);
 }
 
-function handleDragStart(e) {
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', e.target.innerHTML);
-    e.target.classList.add('dragging');
+let draggedElement = null;
+let placeholder = null;
 
-    const jobId = e.target.getAttribute('data-job-id');
+function handleDragStart(e) {
+    draggedElement = e.currentTarget;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', e.currentTarget.innerHTML);
+
+    const jobId = e.currentTarget.getAttribute('data-job-id');
     e.dataTransfer.setData('jobId', jobId);
+
+    // Add dragging class after a slight delay to avoid flickering
+    setTimeout(() => {
+        if (draggedElement) {
+            draggedElement.classList.add('dragging');
+        }
+    }, 0);
 }
 
 function handleDragEnd(e) {
-    e.target.classList.remove('dragging');
+    e.currentTarget.classList.remove('dragging');
+
+    // Remove all drag-over classes
+    document.querySelectorAll('.drag-over, .drag-over-top, .drag-over-bottom').forEach(el => {
+        el.classList.remove('drag-over', 'drag-over-top', 'drag-over-bottom');
+    });
+
+    // Remove placeholder if it exists
+    if (placeholder && placeholder.parentNode) {
+        placeholder.parentNode.removeChild(placeholder);
+    }
+    placeholder = null;
+    draggedElement = null;
 }
 
-function handleDragOver(e) {
-    if (e.preventDefault) {
-        e.preventDefault();
+function handleDragEnter(e) {
+    e.preventDefault();
+    const target = e.currentTarget;
+
+    if (target === draggedElement || !target.classList.contains('job-card')) {
+        return;
     }
+}
+
+function handleCardDragOver(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const target = e.currentTarget;
+
+    if (target === draggedElement || !target.classList.contains('job-card')) {
+        return;
+    }
+
+    const rect = target.getBoundingClientRect();
+    const midpoint = rect.top + rect.height / 2;
+
+    // Remove previous classes
+    target.classList.remove('drag-over-top', 'drag-over-bottom');
+
+    // Add class based on cursor position
+    if (e.clientY < midpoint) {
+        target.classList.add('drag-over-top');
+    } else {
+        target.classList.add('drag-over-bottom');
+    }
+
     e.dataTransfer.dropEffect = 'move';
-    e.currentTarget.classList.add('drag-over');
+    return false;
+}
+
+function handleDragLeaveCard(e) {
+    const target = e.currentTarget;
+    target.classList.remove('drag-over-top', 'drag-over-bottom');
+}
+
+function handleContainerDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+
+    // Add visual feedback to empty containers
+    const container = e.currentTarget;
+    const hasCards = container.querySelectorAll('.job-card:not(.dragging)').length > 0;
+    if (!hasCards) {
+        container.classList.add('drag-over');
+    }
+
     return false;
 }
 
 function handleDragLeave(e) {
-    e.currentTarget.classList.remove('drag-over');
+    if (e.currentTarget === e.target) {
+        e.currentTarget.classList.remove('drag-over');
+    }
 }
 
-function handleDrop(e) {
-    if (e.stopPropagation) {
-        e.stopPropagation();
-    }
+function handleContainerDrop(e) {
+    e.stopPropagation();
     e.preventDefault();
 
     const jobId = e.dataTransfer.getData('jobId');
     const targetMachine = e.currentTarget.getAttribute('data-machine');
 
-    // Update job machine assignment
-    updateJobMachine(jobId, targetMachine);
+    // Find the card being dropped on
+    const afterCard = getCardAfterCursor(e.currentTarget, e.clientY);
+
+    // Update job machine and position
+    updateJobMachineAndPosition(jobId, targetMachine, afterCard);
+
+    // Clean up all drag-related classes
+    document.querySelectorAll('.drag-over, .drag-over-top, .drag-over-bottom').forEach(el => {
+        el.classList.remove('drag-over', 'drag-over-top', 'drag-over-bottom');
+    });
 
     e.currentTarget.classList.remove('drag-over');
+
     return false;
+}
+
+function getCardAfterCursor(container, y) {
+    const cards = [...container.querySelectorAll('.job-card:not(.dragging)')];
+
+    return cards.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+
+        if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+        } else {
+            return closest;
+        }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
 // Load Data from API
@@ -471,6 +563,13 @@ function createJobCard(job) {
 
     card.setAttribute('draggable', 'true');
     card.setAttribute('data-job-id', job.id);
+
+    // Add drag event listeners
+    card.addEventListener('dragstart', handleDragStart);
+    card.addEventListener('dragend', handleDragEnd);
+    card.addEventListener('dragenter', handleDragEnter);
+    card.addEventListener('dragover', handleCardDragOver);
+    card.addEventListener('dragleave', handleDragLeaveCard);
 
     const dueDate = job.dueDate ? new Date(job.dueDate) : null;
     const today = new Date();
@@ -719,6 +818,49 @@ async function updateJobMachine(jobId, machine) {
     } catch (error) {
         console.error('Error updating job machine:', error);
         showToast('Failed to move job', 'error');
+    }
+}
+
+async function updateJobMachineAndPosition(jobId, targetMachine, afterElement) {
+    try {
+        // Find the job being moved
+        const jobIndex = state.jobs.findIndex(j => j.id === jobId);
+        if (jobIndex === -1) return;
+
+        const job = state.jobs[jobIndex];
+        const oldMachine = job.machine;
+
+        // Update machine if it changed
+        if (oldMachine !== targetMachine) {
+            job.machine = targetMachine;
+            await updateJob(jobId, { machine: targetMachine });
+        }
+
+        // Reorder jobs in state based on position
+        state.jobs.splice(jobIndex, 1); // Remove from current position
+
+        if (afterElement) {
+            const afterJobId = afterElement.getAttribute('data-job-id');
+            const afterIndex = state.jobs.findIndex(j => j.id === afterJobId);
+            if (afterIndex !== -1) {
+                state.jobs.splice(afterIndex, 0, job); // Insert before the after element
+            } else {
+                state.jobs.push(job); // Add to end if not found
+            }
+        } else {
+            // No after element means drop at the end
+            state.jobs.push(job);
+        }
+
+        // Re-render to show new order
+        renderJobs();
+        showToast('Job repositioned successfully', 'success');
+    } catch (error) {
+        console.error('Error updating job position:', error);
+        showToast('Failed to reposition job', 'error');
+        // Reload jobs to restore correct state
+        await loadJobs();
+        renderJobs();
     }
 }
 
