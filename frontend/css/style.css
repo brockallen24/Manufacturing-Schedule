@@ -285,7 +285,7 @@ header h1 i {
 
 .due-date-indicator {
     position: absolute;
-    top: 10px;
+    top: 50px;
     right: 10px;
     background: rgba(255, 255, 255, 0.25);
     padding: 4px 10px;
