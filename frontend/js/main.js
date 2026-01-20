@@ -105,7 +105,7 @@ function createMachineColumns() {
                     <i class="fas fa-cog"></i>
                     ${machine}
                 </div>
-                <div class="machine-priority priority-${priority}" onclick="cyclePriority('${machine}')" style="cursor: pointer;" title="Click to change priority">
+                <div class="machine-priority priority-${priority}" data-machine="${machine}" style="cursor: pointer;" title="Click to change priority">
                     Priority: ${priority}
                 </div>
             </div>
@@ -118,6 +118,13 @@ function createMachineColumns() {
         `;
 
         scheduleBoard.appendChild(column);
+
+        // Setup click handler for priority badge
+        const priorityBadge = column.querySelector('.machine-priority');
+        priorityBadge.addEventListener('click', (e) => {
+            e.stopPropagation();
+            cyclePriority(machine);
+        });
 
         // Setup drag and drop
         const jobsContainer = column.querySelector('.jobs-container');
