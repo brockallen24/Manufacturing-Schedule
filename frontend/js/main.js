@@ -276,10 +276,10 @@ function createJobCard(job) {
                     <div class="work-order">Status: ${job.toolReady === 'yes' ? 'Ready' : 'Not Ready'}</div>
                 </div>
                 <div class="job-actions">
-                    <button class="job-action-btn" onclick="editJob('${job.id}')" title="Edit">
+                    <button class="job-action-btn" draggable="false" onclick="editJob('${job.id}')" title="Edit">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="job-action-btn" onclick="deleteJob('${job.id}')" title="Delete">
+                    <button class="job-action-btn" draggable="false" onclick="deleteJob('${job.id}')" title="Delete">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -303,10 +303,10 @@ function createJobCard(job) {
                     <div class="work-order">WO: ${job.workOrder}</div>
                 </div>
                 <div class="job-actions">
-                    <button class="job-action-btn" onclick="editJob('${job.id}')" title="Edit">
+                    <button class="job-action-btn" draggable="false" onclick="editJob('${job.id}')" title="Edit">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="job-action-btn" onclick="deleteJob('${job.id}')" title="Delete">
+                    <button class="job-action-btn" draggable="false" onclick="deleteJob('${job.id}')" title="Delete">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -339,18 +339,6 @@ function createJobCard(job) {
     // Add drag event listeners
     card.addEventListener('dragstart', handleDragStart);
     card.addEventListener('dragend', handleDragEnd);
-
-    // Prevent drag from starting when clicking action buttons
-    const actionButtons = card.querySelectorAll('.job-action-btn');
-    actionButtons.forEach(button => {
-        button.addEventListener('mousedown', (e) => {
-            e.stopPropagation();
-        });
-        button.addEventListener('dragstart', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-        });
-    });
 
     return card;
 }
