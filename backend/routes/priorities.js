@@ -9,11 +9,14 @@ router.get('/', async (req, res) => {
     
     // Convert to object format { "22": "low", "55": "medium", ... }
     const priorities = records.map(record => ({
-    machine: record.fields.Name,          priority: record.fields.priority
+      machine: record.fields.Name,
+      priority: record.fields.priority
     }));
-    res.json({ 
+
+    res.json({
       priorities,
-count: priorities.length,      timestamp: new Date().toISOString()
+      count: priorities.length,
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
     console.error('Error fetching priorities:', error);
