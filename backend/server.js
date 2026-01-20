@@ -33,6 +33,7 @@ app.use(helmet({
                         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
                         fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"],
                         scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
+                        scriptSrcAttr: ["'unsafe-inline'"],
                         imgSrc: ["'self'", "data:", "https:"],
               },
       },
