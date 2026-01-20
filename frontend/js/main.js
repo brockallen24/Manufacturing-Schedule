@@ -293,7 +293,7 @@ function calculateMaterialSummary() {
         console.log(`Job ${index + 1}: ${job.jobName || job.toolNumber}, Material: ${material}, Hours: ${totalHours}, Cumulative: ${jobStartHour} → ${jobEndHour}`);
 
         // Job entirely in week 1 (0-168)
-        if (jobEndHour <= 168) {
+        if (jobEndHour < 169) {
             summary[material].week1 += totalMaterial;
             console.log(`  → All in Week 1: ${totalMaterial} lbs`);
         }
@@ -303,13 +303,11 @@ function calculateMaterialSummary() {
             console.log(`  → All in Week 2: ${totalMaterial} lbs`);
         }
         // Job spans the boundary between week 1 and week 2
-        else if (jobStartHour < 169 && jobEndHour > 168) {
-            // Calculate hours in each range
-            const week1End = Math.min(jobEndHour, 168);
-            const week2Start = Math.max(jobStartHour, 169);
-
-            const hoursInWeek1 = week1End - jobStartHour;
-            const hoursInWeek2 = Math.max(0, jobEndHour - week2Start);
+        else {
+            // Week 1 ends at cumulative hour 168.999... (< 169)
+            // Week 2 starts at cumulative hour 169
+            const hoursInWeek1 = Math.min(jobEndHour, 169) - jobStartHour;
+            const hoursInWeek2 = jobEndHour - 169;
 
             console.log(`  → Spans both weeks: ${hoursInWeek1} hrs in Week 1, ${hoursInWeek2} hrs in Week 2`);
 
