@@ -340,6 +340,18 @@ function createJobCard(job) {
     card.addEventListener('dragstart', handleDragStart);
     card.addEventListener('dragend', handleDragEnd);
 
+    // Prevent drag from starting when clicking action buttons
+    const actionButtons = card.querySelectorAll('.job-action-btn');
+    actionButtons.forEach(button => {
+        button.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+        });
+        button.addEventListener('dragstart', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+    });
+
     return card;
 }
 
