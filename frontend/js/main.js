@@ -533,6 +533,9 @@ function renderJobs() {
         `;
     });
 
+    // Track cumulative hours per machine
+    const machineCumulativeHours = {};
+
     // Render jobs into their assigned machines
     state.jobs.forEach(job => {
         const container = document.querySelector(`.jobs-container[data-machine="${job.machine}"]`);
@@ -541,8 +544,17 @@ function renderJobs() {
             const emptyState = container.querySelector('.empty-state');
             if (emptyState) emptyState.remove();
 
-            // Create job card
-            const jobCard = createJobCard(job);
+            // Initialize cumulative hours for this machine if not exists
+            if (!machineCumulativeHours[job.machine]) {
+                machineCumulativeHours[job.machine] = 0;
+            }
+
+            // Add this job's hours to cumulative total
+            const jobHours = parseFloat(job.totalHours || job.setupHours) || 0;
+            machineCumulativeHours[job.machine] += jobHours;
+
+            // Create job card with cumulative hours
+            const jobCard = createJobCard(job, machineCumulativeHours[job.machine]);
             container.appendChild(jobCard);
         }
     });
@@ -552,7 +564,7 @@ function renderJobs() {
 }
 
 // Create Job Card
-function createJobCard(job) {
+function createJobCard(job, cumulativeHours) {
     const card = document.createElement('div');
 
     // Add conditional class based on toolReady status for setup cards
@@ -609,6 +621,9 @@ function createJobCard(job) {
             <div class="progress-bar">
                 <div class="progress-fill" style="width: ${job.percentComplete || 0}%"></div>
             </div>
+            <div class="cumulative-hours">
+                <i class="fas fa-chart-line"></i> Cumulative: ${cumulativeHours.toFixed(2)} hrs
+            </div>
         `;
     } else {
         card.innerHTML = `
@@ -647,6 +662,9 @@ function createJobCard(job) {
             </div>
             <div class="progress-bar">
                 <div class="progress-fill" style="width: ${job.percentComplete || 0}%"></div>
+            </div>
+            <div class="cumulative-hours">
+                <i class="fas fa-chart-line"></i> Cumulative: ${cumulativeHours.toFixed(2)} hrs
             </div>
         `;
     }
