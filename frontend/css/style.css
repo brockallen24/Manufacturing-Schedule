@@ -216,6 +216,64 @@ header h1 i {
     gap: 12px;
 }
 
+/* Material Summary Column */
+.summary-column {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.summary-column .machine-header {
+    border-bottom-color: rgba(0, 0, 0, 0.1);
+}
+
+.summary-column .machine-name {
+    color: #2d3748;
+}
+
+.summary-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.summary-card {
+    background: white;
+    border-radius: 10px;
+    padding: 16px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.summary-material-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.summary-detail {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+}
+
+.summary-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #4a5568;
+}
+
+.summary-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2d3748;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
 /* Job Cards */
 .job-card {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -644,6 +702,23 @@ form {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
         color-adjust: exact !important;
+    }
+
+    /* Preserve summary column colors in print */
+    .summary-column {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        page-break-inside: avoid;
+        margin-bottom: 20px;
+        border: 1px solid #000;
+    }
+
+    .summary-card {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        border: 1px solid #ddd;
     }
 
     .modal {

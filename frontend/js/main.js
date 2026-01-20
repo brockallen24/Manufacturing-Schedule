@@ -130,12 +130,133 @@ function createMachineColumns() {
         const jobsContainer = column.querySelector('.jobs-container');
         setupDragAndDrop(jobsContainer);
     });
+
+    // Add Material Summary Column
+    createMaterialSummaryColumn(scheduleBoard);
+}
+
+// Create Material Summary Column
+function createMaterialSummaryColumn(scheduleBoard) {
+    const summary = calculateMaterialSummary();
+    const column = document.createElement('div');
+    column.className = 'machine-column summary-column';
+
+    let summaryHTML = `
+        <div class="machine-header">
+            <div class="machine-name">
+                <i class="fas fa-chart-bar"></i>
+                Material Summary
+            </div>
+        </div>
+        <div class="summary-container">
+    `;
+
+    // Sort materials alphabetically
+    const materials = Object.keys(summary).sort();
+
+    if (materials.length === 0) {
+        summaryHTML += `
+            <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <p>No materials scheduled</p>
+            </div>
+        `;
+    } else {
+        materials.forEach(material => {
+            const week1 = summary[material].week1.toFixed(2);
+            const week2 = summary[material].week2.toFixed(2);
+
+            summaryHTML += `
+                <div class="summary-card">
+                    <div class="summary-material-name">${material}</div>
+                    <div class="summary-detail">
+                        <span class="summary-label">0-168 hrs:</span>
+                        <span class="summary-value">${week1} lbs</span>
+                    </div>
+                    <div class="summary-detail">
+                        <span class="summary-label">169-336 hrs:</span>
+                        <span class="summary-value">${week2} lbs</span>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    summaryHTML += `</div>`;
+    column.innerHTML = summaryHTML;
+    scheduleBoard.appendChild(column);
 }
 
 // Get Machine Priority
 function getMachinePriority(machine) {
     const priority = state.machinePriorities.find(p => p.machine === machine);
     return priority ? priority.priority : 'N/A';
+}
+
+// Calculate material summary with cumulative hour tracking
+function calculateMaterialSummary() {
+    const summary = {};
+    let cumulativeHours = 0;
+
+    // Process jobs in order (by machine, then position in column)
+    const orderedJobs = [];
+    MACHINES.forEach(machine => {
+        const machineJobs = state.jobs.filter(job => job.machine === machine);
+        orderedJobs.push(...machineJobs);
+    });
+
+    orderedJobs.forEach(job => {
+        const material = job.material || 'Unknown';
+        const totalHours = parseFloat(job.totalHours) || 0;
+        const totalMaterial = parseFloat(job.totalMaterial) || 0;
+
+        if (!summary[material]) {
+            summary[material] = {
+                week1: 0,  // 0-168 hours
+                week2: 0   // 169-336 hours
+            };
+        }
+
+        const jobStartHour = cumulativeHours;
+        const jobEndHour = cumulativeHours + totalHours;
+
+        // Job entirely in week 1 (0-168)
+        if (jobEndHour <= 168) {
+            summary[material].week1 += totalMaterial;
+        }
+        // Job entirely in week 2 (169-336)
+        else if (jobStartHour >= 169) {
+            summary[material].week2 += totalMaterial;
+        }
+        // Job spans both weeks - split proportionally
+        else if (jobStartHour < 168 && jobEndHour > 168) {
+            const hoursInWeek1 = 168 - jobStartHour;
+            const hoursInWeek2 = jobEndHour - 168;
+            const week1Ratio = hoursInWeek1 / totalHours;
+            const week2Ratio = hoursInWeek2 / totalHours;
+
+            summary[material].week1 += totalMaterial * week1Ratio;
+            summary[material].week2 += totalMaterial * week2Ratio;
+        }
+        // Job starts in week 1 but we're already past 168
+        else if (jobStartHour < 169 && jobEndHour > 169) {
+            const hoursInWeek1 = Math.max(0, 168 - jobStartHour);
+            const hoursInWeek2 = jobEndHour - Math.max(169, jobStartHour);
+
+            if (hoursInWeek1 > 0) {
+                const week1Ratio = hoursInWeek1 / totalHours;
+                summary[material].week1 += totalMaterial * week1Ratio;
+            }
+            if (hoursInWeek2 > 0) {
+                const week2Ratio = hoursInWeek2 / totalHours;
+                summary[material].week2 += totalMaterial * week2Ratio;
+            }
+        }
+
+        cumulativeHours = jobEndHour;
+    });
+
+    return summary;
 }
 
 // Setup Drag and Drop
