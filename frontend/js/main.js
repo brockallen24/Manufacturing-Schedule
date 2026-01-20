@@ -198,11 +198,24 @@ function calculateMaterialSummary() {
     const summary = {};
     let cumulativeHours = 0;
 
-    // Process jobs in order (by machine, then position in column)
+    // Process jobs in order (by machine, then any remaining jobs)
     const orderedJobs = [];
+    const processedJobIds = new Set();
+
+    // First, add jobs from known machines in order
     MACHINES.forEach(machine => {
         const machineJobs = state.jobs.filter(job => job.machine === machine);
-        orderedJobs.push(...machineJobs);
+        machineJobs.forEach(job => {
+            orderedJobs.push(job);
+            processedJobIds.add(job.id);
+        });
+    });
+
+    // Then add any remaining jobs that weren't in the MACHINES list
+    state.jobs.forEach(job => {
+        if (!processedJobIds.has(job.id)) {
+            orderedJobs.push(job);
+        }
     });
 
     orderedJobs.forEach(job => {
