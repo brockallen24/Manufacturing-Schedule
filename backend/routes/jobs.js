@@ -51,8 +51,7 @@ router.post('/', async (req, res) => {
         }
 
         const records = await jobsTable.create([
-          { fields: jobData }
-              ]);
+          { fields: jobData }              ]);
     }
     
     
