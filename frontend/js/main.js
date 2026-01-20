@@ -105,7 +105,9 @@ function createMachineColumns() {
                     <i class="fas fa-cog"></i>
                     ${machine}
                 </div>
-                <div class="machine-priority">Priority: ${priority}</div>
+                <div class="machine-priority priority-${priority}" onclick="cyclePriority('${machine}')" style="cursor: pointer;" title="Click to change priority">
+                    Priority: ${priority}
+                </div>
             </div>
             <div class="jobs-container" data-machine="${machine}">
                 <div class="empty-state">
@@ -543,6 +545,38 @@ window.deleteJob = async function(jobId) {
     } catch (error) {
         console.error('Error deleting job:', error);
         showToast('Failed to delete job', 'error');
+    }
+};
+
+// Cycle machine priority
+window.cyclePriority = async function(machine) {
+    const priorityLevels = ['low', 'medium', 'high', 'critical'];
+    const currentPriority = getMachinePriority(machine);
+    const currentIndex = priorityLevels.indexOf(currentPriority);
+    const nextIndex = (currentIndex + 1) % priorityLevels.length;
+    const newPriority = priorityLevels[nextIndex];
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/priorities/${machine}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ priority: newPriority })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to update priority');
+        }
+
+        // Reload priorities and refresh display
+        await loadMachinePriorities();
+        createMachineColumns();
+        renderJobs();
+
+        showToast(`${machine} priority updated to ${newPriority}`, 'success');
+    } catch (error) {
+        console.error('Error updating priority:', error);
+        showToast('Failed to update priority', 'error');
     }
 };
 
