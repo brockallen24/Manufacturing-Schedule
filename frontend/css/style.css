@@ -137,9 +137,46 @@ header h1 i {
 /* Schedule Board */
 .schedule-board {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 20px;
-    padding: 10px;
+    padding: 20px;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Custom scrollbar for schedule board */
+.schedule-board::-webkit-scrollbar {
+    width: 12px;
+}
+
+.schedule-board::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 10px;
+}
+
+.schedule-board::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 10px;
+    border: 3px solid var(--bg-secondary);
+}
+
+.schedule-board::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-hover);
+}
+
+/* Responsive grid for schedule board */
+@media (max-width: 1400px) {
+    .schedule-board {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 900px) {
+    .schedule-board {
+        grid-template-columns: 1fr;
+        max-height: calc(100vh - 250px);
+    }
 }
 
 .machine-column {
@@ -177,11 +214,123 @@ header h1 i {
     color: var(--text-secondary);
 }
 
+/* Priority Level Colors */
+.machine-priority.priority-low {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.machine-priority.priority-medium {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
+
+.machine-priority.priority-high {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    color: white;
+}
+
+.machine-priority.priority-critical {
+    background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%);
+    color: white;
+    font-weight: 600;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.8;
+    }
+}
+
 .jobs-container {
     min-height: 300px;
     display: flex;
     flex-direction: column;
     gap: 12px;
+}
+
+/* Material Summary Column */
+.summary-column {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.summary-column .machine-header {
+    border-bottom-color: rgba(0, 0, 0, 0.1);
+}
+
+.summary-column .machine-name {
+    color: #2d3748;
+}
+
+.summary-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 600px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+/* Scrollbar styling for summary container */
+.summary-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.summary-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+}
+
+.summary-container::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+}
+
+.summary-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.summary-card {
+    background: white;
+    border-radius: 10px;
+    padding: 16px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.summary-material-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.summary-detail {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+}
+
+.summary-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #4a5568;
+}
+
+.summary-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2d3748;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 /* Job Cards */
@@ -203,8 +352,17 @@ header h1 i {
 }
 
 .job-card.dragging {
-    opacity: 0.5;
+    opacity: 0.4;
     cursor: grabbing;
+    transform: scale(0.95);
+}
+
+.job-card.drag-over-top {
+    border-top: 3px solid #4ade80;
+}
+
+.job-card.drag-over-bottom {
+    border-bottom: 3px solid #4ade80;
 }
 
 .job-card.setup-card {
@@ -290,6 +448,24 @@ header h1 i {
     height: 100%;
     border-radius: 10px;
     transition: width 0.3s ease;
+}
+
+.cumulative-hours {
+    margin-top: 8px;
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.cumulative-hours i {
+    font-size: 11px;
 }
 
 .due-date-indicator {
@@ -531,9 +707,7 @@ form {
         justify-content: center;
     }
 
-    .schedule-board {
-        grid-template-columns: 1fr;
-    }
+    /* schedule-board responsive rules moved up to lines 168-180 for better organization */
 
     .modal-content {
         width: 95%;
@@ -565,39 +739,155 @@ form {
 }
 
 /* Print Styles */
+/* Remove browser-generated headers and footers from print */
+@page {
+    margin: 0.5cm;
+    size: landscape;
+}
+
 @media print {
     body {
         background: white;
+        margin: 0;
+        padding: 0.5cm;
+        width: 100%;
     }
 
     header {
         box-shadow: none;
         border-bottom: 2px solid #000;
+        margin-bottom: 20px;
     }
 
+    /* Hide buttons and navigation during print */
     .header-actions,
-    .job-actions {
+    .job-actions,
+    .tab-navigation {
         display: none !important;
     }
 
+    /* Hide inactive tab content */
+    .tab-content:not(.active) {
+        display: none !important;
+    }
+
+    /* Ensure active tab is visible - but NOT for schedule board */
+    .tab-content.active:not(.schedule-board) {
+        display: block !important;
+    }
+
+    /* Schedule board print styles - maintain 3-column grid layout */
+    .schedule-board.tab-content.active,
     .schedule-board {
-        display: block;
-        page-break-inside: avoid;
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 15px !important;
+        max-height: none !important;
+        overflow: visible !important;
+        padding: 0 !important;
+        width: 100%;
+    }
+
+    /* Prevent responsive breakpoints from affecting print */
+    @media (max-width: 1400px) {
+        .schedule-board,
+        .schedule-board.tab-content.active {
+            grid-template-columns: repeat(3, 1fr) !important;
+        }
+    }
+
+    @media (max-width: 900px) {
+        .schedule-board,
+        .schedule-board.tab-content.active {
+            grid-template-columns: repeat(3, 1fr) !important;
+        }
     }
 
     .machine-column {
+        page-break-inside: avoid;
+        margin-bottom: 0;
+        border: 1px solid #000;
+        padding: 10px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .job-card {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        border: 1px solid #000;
+        box-shadow: none;
+    }
+
+    /* Preserve setup/maintenance colors in print */
+    .job-card.setup-card.tool-ready,
+    .job-card.setup-card.tool-not-ready {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+    }
+
+    /* Preserve priority colors in print */
+    .machine-priority {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+    }
+
+    /* Preserve summary column colors in print */
+    .summary-column {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
         page-break-inside: avoid;
         margin-bottom: 20px;
         border: 1px solid #000;
     }
 
-    .job-card {
-        background: white !important;
-        color: #000 !important;
-        border: 1px solid #000;
-        box-shadow: none;
+    .summary-card {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        border: 1px solid #ddd;
     }
 
+    /* Priorities view print styles */
+    .priorities-view {
+        background: white !important;
+    }
+
+    .priority-item {
+        page-break-inside: avoid;
+        border: 1px solid #000;
+        margin-bottom: 10px;
+    }
+
+    .priority-drag-handle {
+        display: none !important;
+    }
+
+    .priority-notes-textarea {
+        border: 1px solid #ddd;
+        background: white;
+    }
+
+    /* Archive view print styles */
+    .archive-view {
+        background: white !important;
+    }
+
+    .archive-item {
+        page-break-inside: avoid;
+        border: 1px solid #000;
+        margin-bottom: 10px;
+    }
+
+    .archive-actions {
+        display: none !important;
+    }
+
+    /* Hide modals during print */
     .modal {
         display: none !important;
     }
@@ -693,4 +983,606 @@ form {
 
 .toast.warning {
     border-left: 4px solid var(--warning-color);
+}
+
+/* ===========================
+   Tab Navigation Styles
+   =========================== */
+.tab-navigation {
+    display: flex;
+    gap: 8px;
+    margin: 20px 0;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 0;
+}
+
+.tab-btn {
+    background: transparent;
+    border: none;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-bottom: 3px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tab-btn:hover {
+    color: var(--primary-color);
+    background: rgba(37, 99, 235, 0.05);
+}
+
+.tab-btn.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    background: rgba(37, 99, 235, 0.08);
+}
+
+.tab-btn i {
+    font-size: 18px;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Override tab-content display for schedule-board to maintain grid layout */
+.schedule-board.tab-content.active {
+    display: grid;
+}
+
+/* ===========================
+   Priorities View Styles
+   =========================== */
+.priorities-view {
+    padding: 20px;
+    background: var(--bg-primary);
+}
+
+.priorities-header {
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+.priorities-header h2 {
+    margin: 0 0 8px 0;
+    color: var(--text-primary);
+    font-size: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.priorities-header i {
+    color: var(--primary-color);
+}
+
+.priorities-subtitle {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.priorities-list {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.priority-item {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    display: grid;
+    grid-template-columns: auto 1fr 400px;
+    gap: 20px;
+    align-items: start;
+    cursor: move;
+    transition: all 0.3s ease;
+    border-left: 5px solid var(--primary-color);
+}
+
+.priority-item:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+.priority-item.dragging {
+    opacity: 0.5 !important;
+    cursor: grabbing !important;
+    transform: scale(1.03) rotate(2deg);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    background: rgba(37, 99, 235, 0.08);
+    border: 2px solid var(--primary-color);
+}
+
+.priority-item.drag-over {
+    border-top: 3px solid var(--primary-color);
+    padding-top: 23px;
+}
+
+.priority-item.drag-over-top {
+    border-top: 4px solid var(--primary-color);
+    margin-top: 8px;
+    padding-top: 20px;
+}
+
+.priority-item.drag-over-bottom {
+    border-bottom: 4px solid var(--primary-color);
+    margin-bottom: 8px;
+    padding-bottom: 20px;
+}
+
+.priority-drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e8ebef 100%);
+    border-radius: 10px;
+    color: var(--text-secondary);
+    font-size: 22px;
+    cursor: grab;
+    transition: all 0.2s ease;
+    border: 2px solid rgba(0, 0, 0, 0.05);
+    user-select: none;
+}
+
+.priority-drag-handle:hover {
+    background: linear-gradient(135deg, #e8ebef 0%, #d5dce5 100%);
+    color: var(--primary-color);
+    transform: scale(1.05);
+    border-color: var(--primary-color);
+}
+
+.priority-drag-handle:active {
+    cursor: grabbing;
+    transform: scale(0.95);
+    background: linear-gradient(135deg, #d5dce5 0%, #c5ccd5 100%);
+}
+
+/* Prevent text selection while dragging */
+.priority-item * {
+    user-select: none;
+}
+
+.priority-notes-textarea {
+    user-select: text !important;
+}
+
+.priority-job-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.priority-machine-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    width: fit-content;
+}
+
+.priority-job-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.priority-job-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 8px;
+}
+
+.priority-detail-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.priority-detail-item i {
+    color: var(--primary-color);
+    font-size: 12px;
+}
+
+.priority-detail-item strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.priority-notes-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.priority-notes-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.priority-notes-textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 12px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--text-primary);
+    resize: vertical;
+    transition: border-color 0.3s ease;
+}
+
+.priority-notes-textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.priority-notes-textarea::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.6;
+}
+
+.priorities-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-secondary);
+}
+
+.priorities-empty-state i {
+    font-size: 64px;
+    margin-bottom: 20px;
+    opacity: 0.3;
+}
+
+.priorities-empty-state p {
+    font-size: 18px;
+    margin: 0;
+}
+
+/* Priority Colors based on job priority */
+.priority-item[data-priority="low"] {
+    border-left-color: #10b981;
+}
+
+.priority-item[data-priority="medium"] {
+    border-left-color: #f59e0b;
+}
+
+.priority-item[data-priority="high"] {
+    border-left-color: #ef4444;
+}
+
+.priority-item[data-priority="critical"] {
+    border-left-color: #dc2626;
+}
+
+/* Setup/Maintenance item styling */
+.priority-item-setup {
+    background: linear-gradient(to right, rgba(16, 185, 129, 0.03), white);
+}
+
+.priority-item-setup .priority-machine-badge {
+    font-weight: 700;
+}
+
+/* Job item default styling */
+.priority-item-job {
+    /* Default job styling - uses standard priority colors */
+}
+
+/* Responsive Design for Priorities */
+@media (max-width: 1024px) {
+    .priority-item {
+        grid-template-columns: auto 1fr;
+        grid-template-rows: auto auto;
+    }
+
+    .priority-notes-section {
+        grid-column: 2;
+        grid-row: 2;
+    }
+}
+
+@media (max-width: 768px) {
+    .priority-item {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+    }
+
+    .priority-drag-handle {
+        width: 100%;
+        height: 30px;
+    }
+
+    .priority-notes-section {
+        grid-column: 1;
+        grid-row: 3;
+    }
+}
+
+/* ===========================
+   Archive View Styles
+   =========================== */
+.archive-view {
+    padding: 20px;
+    background: var(--bg-primary);
+}
+
+.archive-header {
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+.archive-header h2 {
+    margin: 0 0 8px 0;
+    color: var(--text-primary);
+    font-size: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.archive-header i {
+    color: #6b7280;
+}
+
+.archive-subtitle {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.archive-list {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.archive-item {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-left: 5px solid #6b7280;
+    transition: all 0.3s ease;
+}
+
+.archive-item:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+.archive-item[data-priority="low"] {
+    border-left-color: #10b981;
+}
+
+.archive-item[data-priority="medium"] {
+    border-left-color: #f59e0b;
+}
+
+.archive-item[data-priority="high"] {
+    border-left-color: #ef4444;
+}
+
+.archive-item[data-priority="critical"] {
+    border-left-color: #dc2626;
+}
+
+.archive-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 16px;
+}
+
+.archive-item-info {
+    flex: 1;
+}
+
+.archive-machine-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    background: #6b7280;
+    color: white;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.archive-job-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.archive-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+.archive-item-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+}
+
+.archive-detail {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.archive-detail i {
+    color: var(--primary-color);
+    font-size: 12px;
+}
+
+.archive-detail strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.archive-date-completed {
+    color: var(--success-color);
+    font-weight: 600;
+}
+
+.archive-date-completed i {
+    color: var(--success-color);
+}
+
+.archive-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-secondary);
+}
+
+.archive-empty-state i {
+    font-size: 64px;
+    margin-bottom: 20px;
+    opacity: 0.3;
+}
+
+.archive-empty-state p {
+    font-size: 18px;
+    margin: 0;
+}
+
+/* Archive button styling on job cards */
+.job-action-archive {
+    background: #f59e0b;
+}
+
+.job-action-archive:hover {
+    background: #d97706;
+}
+
+/* Archive Modal Styles */
+.modal-content-small {
+    max-width: 500px;
+}
+
+.archive-prompt {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+}
+
+/* Login Modal Styles */
+#loginModal {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
+#loginModal .modal-content {
+    max-width: 400px;
+}
+
+.login-prompt {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.login-error {
+    background: #fee;
+    color: #c33;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#currentUser {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+/* Read-Only Mode (Shop Floor Users) */
+body.read-only-mode .job-card {
+    cursor: default !important;
+}
+
+body.read-only-mode .job-card[draggable="true"] {
+    cursor: default !important;
+}
+
+body.read-only-mode .machine-priority {
+    cursor: default !important;
+    pointer-events: none;
+}
+
+body.read-only-mode .priority-notes-textarea[readonly] {
+    background-color: #f9fafb;
+    cursor: default;
+}
+
+/* Responsive Design for Archive */
+@media (max-width: 768px) {
+    .archive-item-header {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .archive-actions {
+        width: 100%;
+    }
+
+    .archive-actions button {
+        flex: 1;
+    }
 }

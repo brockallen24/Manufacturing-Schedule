@@ -28,15 +28,15 @@ router.get('/', async (req, res) => {
 router.get('/:machine', async (req, res) => {
   try {
     const records = await prioritiesTable.select({
-      filterByFormula: `{machine} = '${req.params.machine}'`
+      filterByFormula: `{Name} = '${req.params.machine}'`
     }).firstPage();
     
     if (records.length === 0) {
       return res.status(404).json({ error: 'Machine priority not found' });
     }
     
-    res.json({ 
-      machine: records[0].fields.machine,
+    res.json({
+      machine: records[0].fields.Name,
       priority: records[0].fields.priority,
       id: records[0].id
     });
@@ -50,29 +50,34 @@ router.get('/:machine', async (req, res) => {
 router.put('/:machine', async (req, res) => {
   try {
     const { priority } = req.body;
-    
+    console.log(`📝 Updating priority for machine: ${req.params.machine} to: ${priority}`);
+
     if (!priority) {
       return res.status(400).json({ error: 'Priority is required' });
     }
-    
+
     // Validate priority value
     const validPriorities = ['low', 'medium', 'high', 'critical'];
     if (!validPriorities.includes(priority)) {
-      return res.status(400).json({ 
-        error: 'Invalid priority', 
-        validValues: validPriorities 
+      console.log(`❌ Invalid priority value: ${priority}`);
+      return res.status(400).json({
+        error: 'Invalid priority',
+        validValues: validPriorities
       });
     }
-    
+
     // Find existing record
     const existingRecords = await prioritiesTable.select({
-      filterByFormula: `{machine} = '${req.params.machine}'`
+      filterByFormula: `{Name} = '${req.params.machine}'`
     }).firstPage();
-    
+
+    console.log(`🔍 Found ${existingRecords.length} existing records for machine ${req.params.machine}`);
+
     let record;
-    
+
     if (existingRecords.length > 0) {
       // Update existing record
+      console.log(`🔄 Updating existing record ${existingRecords[0].id} with priority: ${priority}`);
       const updated = await prioritiesTable.update([
         {
           id: existingRecords[0].id,
@@ -80,27 +85,31 @@ router.put('/:machine', async (req, res) => {
         }
       ]);
       record = updated[0];
+      console.log(`✅ Update successful. New priority: ${record.fields.priority}`);
     } else {
       // Create new record
+      console.log(`➕ Creating new record for machine ${req.params.machine} with priority: ${priority}`);
       const created = await prioritiesTable.create([
         {
           fields: {
-            machine: req.params.machine,
+            Name: req.params.machine,
             priority
           }
         }
       ]);
       record = created[0];
+      console.log(`✅ Creation successful. Priority: ${record.fields.priority}`);
     }
-    
-    res.json({ 
-      machine: record.fields.machine,
+
+    res.json({
+      machine: record.fields.Name,
       priority: record.fields.priority,
       id: record.id,
       message: 'Priority updated successfully'
     });
   } catch (error) {
-    console.error('Error updating priority:', error);
+    console.error('❌ Error updating priority:', error);
+    console.error('Error details:', JSON.stringify(error, null, 2));
     res.status(500).json({ error: 'Failed to update priority', message: error.message });
   }
 });
@@ -119,7 +128,7 @@ router.post('/batch', async (req, res) => {
     for (const [machine, priority] of Object.entries(priorities)) {
       // Find existing record
       const existingRecords = await prioritiesTable.select({
-        filterByFormula: `{machine} = '${machine}'`
+        filterByFormula: `{Name} = '${machine}'`
       }).firstPage();
       
       if (existingRecords.length > 0) {
@@ -131,7 +140,7 @@ router.post('/batch', async (req, res) => {
         // Create new record
         await prioritiesTable.create([
           {
-            fields: { machine, priority }
+            fields: { Name: machine, priority }
           }
         ]);
       }
