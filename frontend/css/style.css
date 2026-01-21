@@ -1518,6 +1518,10 @@ form {
 }
 
 /* Login Modal Styles */
+#loginModal {
+    display: none; /* Hidden by default */
+}
+
 #loginModal.show {
     display: flex !important;
     align-items: center;
