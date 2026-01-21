@@ -107,11 +107,27 @@ function handleLogin(e) {
         sessionStorage.setItem('currentUser', usernameInput);
         sessionStorage.setItem('userRole', USERS[username].role);
 
+        console.log('👁️ Hiding login modal...');
+
         // Hide login modal and start app
         loginModal.classList.remove('show');
         loginModal.style.display = 'none';
         loginError.style.display = 'none';
         document.getElementById('loginForm').reset();
+
+        // Double check the modal is hidden
+        const modalComputedStyle = window.getComputedStyle(loginModal);
+        console.log('👁️ Modal display after hide:', modalComputedStyle.display);
+        console.log('👁️ Modal classList:', loginModal.classList.toString());
+
+        // Make sure the main container is visible
+        const container = document.querySelector('.container');
+        if (container) {
+            container.style.display = '';
+            console.log('👁️ Container display:', window.getComputedStyle(container).display);
+        } else {
+            console.error('❌ Container element not found!');
+        }
 
         console.log('🚀 Starting app...');
         startApp();
@@ -137,11 +153,29 @@ function handleLogout() {
 
 // Start Application
 function startApp() {
-    initializeApp();
-    setupEventListeners();
-    applyRoleRestrictions();
-    loadData();
-    updateUserDisplay();
+    try {
+        console.log('🚀 START APP: Beginning app initialization');
+
+        console.log('🚀 START APP: Step 1 - Initialize app');
+        initializeApp();
+
+        console.log('🚀 START APP: Step 2 - Setup event listeners');
+        setupEventListeners();
+
+        console.log('🚀 START APP: Step 3 - Apply role restrictions');
+        applyRoleRestrictions();
+
+        console.log('🚀 START APP: Step 4 - Update user display');
+        updateUserDisplay();
+
+        console.log('🚀 START APP: Step 5 - Load data');
+        loadData();
+
+        console.log('✅ START APP: Complete!');
+    } catch (error) {
+        console.error('❌ START APP ERROR:', error);
+        console.error('Stack trace:', error.stack);
+    }
 }
 
 // Initialize Application
@@ -182,6 +216,8 @@ function applyRoleRestrictions() {
 
 // Setup Event Listeners
 function setupEventListeners() {
+    console.log('🔧 SETUP LISTENERS: Starting event listener setup');
+
     // Modal controls
     const jobModal = document.getElementById('jobModal');
     const setupModal = document.getElementById('setupModal');
@@ -195,17 +231,24 @@ function setupEventListeners() {
     const cancelSetupBtn = document.getElementById('cancelSetupBtn');
     const cancelArchiveBtn = document.getElementById('cancelArchiveBtn');
 
+    console.log('🔧 SETUP LISTENERS: Elements found:', {
+        jobModal: !!jobModal,
+        setupModal: !!setupModal,
+        addJobBtn: !!addJobBtn,
+        addSetupBtn: !!addSetupBtn
+    });
+
     // Open modals
-    addJobBtn.addEventListener('click', () => openJobModal());
-    addSetupBtn.addEventListener('click', () => openSetupModal());
+    if (addJobBtn) addJobBtn.addEventListener('click', () => openJobModal());
+    if (addSetupBtn) addSetupBtn.addEventListener('click', () => openSetupModal());
 
     // Close modals
-    closeBtn.addEventListener('click', () => closeModal(jobModal));
-    closeSetupBtn.addEventListener('click', () => closeModal(setupModal));
-    closeArchiveDateBtn?.addEventListener('click', () => closeModal(archiveDateModal));
-    cancelBtn.addEventListener('click', () => closeModal(jobModal));
-    cancelSetupBtn.addEventListener('click', () => closeModal(setupModal));
-    cancelArchiveBtn?.addEventListener('click', () => closeModal(archiveDateModal));
+    if (closeBtn && jobModal) closeBtn.addEventListener('click', () => closeModal(jobModal));
+    if (closeSetupBtn && setupModal) closeSetupBtn.addEventListener('click', () => closeModal(setupModal));
+    if (closeArchiveDateBtn && archiveDateModal) closeArchiveDateBtn.addEventListener('click', () => closeModal(archiveDateModal));
+    if (cancelBtn && jobModal) cancelBtn.addEventListener('click', () => closeModal(jobModal));
+    if (cancelSetupBtn && setupModal) cancelSetupBtn.addEventListener('click', () => closeModal(setupModal));
+    if (cancelArchiveBtn && archiveDateModal) cancelArchiveBtn.addEventListener('click', () => closeModal(archiveDateModal));
 
     // Click outside to close
     window.addEventListener('click', (e) => {
@@ -215,9 +258,23 @@ function setupEventListeners() {
     });
 
     // Form submissions
-    document.getElementById('jobForm').addEventListener('submit', handleJobSubmit);
-    document.getElementById('setupForm').addEventListener('submit', handleSetupSubmit);
-    document.getElementById('archiveDateForm')?.addEventListener('submit', handleArchiveSubmit);
+    const jobForm = document.getElementById('jobForm');
+    const setupForm = document.getElementById('setupForm');
+    const archiveDateForm = document.getElementById('archiveDateForm');
+
+    if (jobForm) {
+        jobForm.addEventListener('submit', handleJobSubmit);
+    } else {
+        console.warn('⚠️ jobForm not found');
+    }
+    if (setupForm) {
+        setupForm.addEventListener('submit', handleSetupSubmit);
+    } else {
+        console.warn('⚠️ setupForm not found');
+    }
+    if (archiveDateForm) {
+        archiveDateForm.addEventListener('submit', handleArchiveSubmit);
+    }
 
     // Auto-calculate total hours
     const cycleTime = document.getElementById('cycleTime');
