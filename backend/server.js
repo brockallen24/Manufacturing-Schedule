@@ -64,25 +64,41 @@ if (allowedOrigins) {
 // Applied AFTER CORS to avoid blocking preflight requests
 if (process.env.BASIC_AUTH_USER && process.env.BASIC_AUTH_PASSWORD) {
   console.log('🔒 HTTP Basic Authentication: ENABLED');
-  console.log('   Username:', process.env.BASIC_AUTH_USER);
-  console.log('   Password length:', process.env.BASIC_AUTH_PASSWORD.length, 'characters');
+  console.log('   Expected Username:', JSON.stringify(process.env.BASIC_AUTH_USER));
+  console.log('   Expected Password:', JSON.stringify(process.env.BASIC_AUTH_PASSWORD));
+  console.log('   Username length:', process.env.BASIC_AUTH_USER.length);
+  console.log('   Password length:', process.env.BASIC_AUTH_PASSWORD.length);
 
-  app.use(basicAuth({
-    users: { [process.env.BASIC_AUTH_USER]: process.env.BASIC_AUTH_PASSWORD },
-    challenge: true,
-    realm: 'Manufacturing Schedule Application',
-    authorizer: (username, password) => {
-      const userMatches = basicAuth.safeCompare(username, process.env.BASIC_AUTH_USER);
-      const passwordMatches = basicAuth.safeCompare(password, process.env.BASIC_AUTH_PASSWORD);
-      console.log('🔐 Auth attempt - User:', username, 'Match:', userMatches && passwordMatches);
-      return userMatches && passwordMatches;
-    },
-    authorizeAsync: false,
-    unauthorizedResponse: (req) => {
-      console.log('❌ Unauthorized access attempt from:', req.ip);
-      return 'Unauthorized - Please provide valid credentials';
+  app.use((req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (authHeader) {
+      const base64Credentials = authHeader.split(' ')[1];
+      const credentials = Buffer.from(base64Credentials, 'base64').toString('utf-8');
+      const [username, password] = credentials.split(':');
+
+      console.log('📨 Auth Request:', {
+        path: req.path,
+        method: req.method,
+        receivedUsername: JSON.stringify(username),
+        receivedPassword: JSON.stringify(password),
+        usernameMatch: username === process.env.BASIC_AUTH_USER,
+        passwordMatch: password === process.env.BASIC_AUTH_PASSWORD
+      });
+
+      if (username === process.env.BASIC_AUTH_USER && password === process.env.BASIC_AUTH_PASSWORD) {
+        console.log('✅ Authentication SUCCESS for user:', username);
+        return next();
+      } else {
+        console.log('❌ Authentication FAILED - Credentials do not match');
+        res.set('WWW-Authenticate', 'Basic realm="Manufacturing Schedule Application"');
+        return res.status(401).send('Unauthorized - Invalid credentials');
+      }
+    } else {
+      console.log('🔑 No credentials provided, requesting authentication');
+      res.set('WWW-Authenticate', 'Basic realm="Manufacturing Schedule Application"');
+      return res.status(401).send('Unauthorized - Authentication required');
     }
-  }));
+  });
 } else {
   console.log('🔓 HTTP Basic Authentication: DISABLED (no credentials configured)');
 }
