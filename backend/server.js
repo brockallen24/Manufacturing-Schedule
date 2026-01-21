@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
 const path = require('path');
+const basicAuth = require('express-basic-auth');
 require('dotenv').config();
 
 const jobsRouter = require('./routes/jobs');
@@ -38,6 +39,18 @@ app.use(helmet({
               },
       },
 }));
+
+// HTTP Basic Authentication (optional, enabled via environment variables)
+if (process.env.BASIC_AUTH_USER && process.env.BASIC_AUTH_PASSWORD) {
+  console.log('🔒 HTTP Basic Authentication: ENABLED');
+  app.use(basicAuth({
+    users: { [process.env.BASIC_AUTH_USER]: process.env.BASIC_AUTH_PASSWORD },
+    challenge: true,
+    realm: 'Manufacturing Schedule Application'
+  }));
+} else {
+  console.log('🔓 HTTP Basic Authentication: DISABLED (no credentials configured)');
+}
 
 // CORS configuration - Allow all origins if ALLOWED_ORIGINS not set (for Heroku)
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',');

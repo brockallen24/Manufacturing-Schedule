@@ -27,7 +27,8 @@
     "airtable": "^0.12.2",
     "helmet": "^7.1.0",
     "express-rate-limit": "^7.1.5",
-    "morgan": "^1.10.0"
+    "morgan": "^1.10.0",
+    "express-basic-auth": "^1.2.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
