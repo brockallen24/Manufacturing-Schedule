@@ -1320,73 +1320,78 @@ function formatDate(dateString) {
 // Priorities Drag and Drop
 // ===========================
 
+let dragState = {
+    draggedItem: null,
+    autoScrollInterval: null,
+    scrollSpeed: 0
+};
+
 function setupPrioritiesDragAndDrop() {
+    const prioritiesList = document.getElementById('prioritiesList');
     const priorityItems = document.querySelectorAll('.priority-item');
-    let draggedItem = null;
 
     priorityItems.forEach(item => {
         item.addEventListener('dragstart', handlePriorityDragStart);
-        item.addEventListener('dragover', handlePriorityDragOver);
-        item.addEventListener('drop', handlePriorityDrop);
         item.addEventListener('dragend', handlePriorityDragEnd);
-        item.addEventListener('dragleave', handlePriorityDragLeave);
     });
 
+    // Add dragover to the container for better handling
+    prioritiesList.addEventListener('dragover', handlePriorityDragOver);
+    prioritiesList.addEventListener('drop', handlePriorityDrop);
+
     function handlePriorityDragStart(e) {
-        draggedItem = this;
+        dragState.draggedItem = this;
         this.classList.add('dragging');
         e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/html', this.innerHTML);
+        e.dataTransfer.setData('text/plain', this.dataset.jobId);
+
+        // Start auto-scroll checking
+        startAutoScroll();
     }
 
     function handlePriorityDragOver(e) {
-        if (e.preventDefault) {
-            e.preventDefault();
-        }
+        e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
 
-        const afterElement = getDragAfterElement(e.clientY);
-        if (afterElement == null) {
-            this.classList.add('drag-over');
-        } else {
-            this.classList.remove('drag-over');
-        }
+        // Update auto-scroll speed based on cursor position
+        updateAutoScroll(e.clientY);
 
-        return false;
+        const afterElement = getDragAfterElement(prioritiesList, e.clientY);
+        const draggable = dragState.draggedItem;
+
+        if (afterElement == null) {
+            prioritiesList.appendChild(draggable);
+        } else {
+            prioritiesList.insertBefore(draggable, afterElement);
+        }
     }
 
     function handlePriorityDrop(e) {
-        if (e.stopPropagation) {
-            e.stopPropagation();
-        }
+        e.preventDefault();
+        stopAutoScroll();
 
-        if (draggedItem !== this) {
-            // Get the jobs
-            const draggedJobId = draggedItem.dataset.jobId;
-            const draggedMachine = draggedItem.dataset.machine;
-            const targetJobId = this.dataset.jobId;
-            const targetMachine = this.dataset.machine;
+        // Get the new order
+        const newOrder = Array.from(prioritiesList.querySelectorAll('.priority-item')).map(item => ({
+            jobId: item.dataset.jobId,
+            machine: item.dataset.machine
+        }));
 
-            // Swap the positions of the two jobs in their respective machines
-            swapJobPositions(draggedMachine, draggedJobId, targetMachine, targetJobId);
-        }
-
-        return false;
+        // Save the new order
+        reorderPriorities(newOrder);
     }
 
     function handlePriorityDragEnd(e) {
         this.classList.remove('dragging');
+        stopAutoScroll();
+
+        // Clean up any drag-over classes
         document.querySelectorAll('.priority-item').forEach(item => {
             item.classList.remove('drag-over');
         });
     }
 
-    function handlePriorityDragLeave(e) {
-        this.classList.remove('drag-over');
-    }
-
-    function getDragAfterElement(y) {
-        const draggableElements = [...document.querySelectorAll('.priority-item:not(.dragging)')];
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.priority-item:not(.dragging)')];
 
         return draggableElements.reduce((closest, child) => {
             const box = child.getBoundingClientRect();
@@ -1401,42 +1406,123 @@ function setupPrioritiesDragAndDrop() {
     }
 }
 
-async function swapJobPositions(machine1, jobId1, machine2, jobId2) {
+function startAutoScroll() {
+    // Clear any existing interval
+    stopAutoScroll();
+
+    // Start checking for auto-scroll every 16ms (~60fps)
+    dragState.autoScrollInterval = setInterval(() => {
+        if (dragState.scrollSpeed !== 0) {
+            window.scrollBy(0, dragState.scrollSpeed);
+        }
+    }, 16);
+}
+
+function stopAutoScroll() {
+    if (dragState.autoScrollInterval) {
+        clearInterval(dragState.autoScrollInterval);
+        dragState.autoScrollInterval = null;
+    }
+    dragState.scrollSpeed = 0;
+}
+
+function updateAutoScroll(clientY) {
+    const scrollZone = 100; // pixels from edge to start scrolling
+    const maxScrollSpeed = 15; // max pixels per frame
+    const viewportHeight = window.innerHeight;
+
+    // Distance from top
+    const distanceFromTop = clientY;
+    // Distance from bottom
+    const distanceFromBottom = viewportHeight - clientY;
+
+    if (distanceFromTop < scrollZone) {
+        // Scroll up - closer to edge = faster scroll
+        const intensity = (scrollZone - distanceFromTop) / scrollZone;
+        dragState.scrollSpeed = -intensity * maxScrollSpeed;
+    } else if (distanceFromBottom < scrollZone) {
+        // Scroll down - closer to edge = faster scroll
+        const intensity = (scrollZone - distanceFromBottom) / scrollZone;
+        dragState.scrollSpeed = intensity * maxScrollSpeed;
+    } else {
+        // No scrolling needed
+        dragState.scrollSpeed = 0;
+    }
+}
+
+async function reorderPriorities(newOrder) {
     try {
-        // Find the jobs
-        const job1 = state.jobs.find(j => j.id === jobId1);
-        const job2 = state.jobs.find(j => j.id === jobId2);
+        console.log('Reordering priorities:', newOrder);
 
-        if (!job1 || !job2) {
-            showToast('Error: Jobs not found', 'error');
-            return;
+        // Group by machine to understand what changed
+        const machineGroups = {};
+        newOrder.forEach((item, index) => {
+            if (!machineGroups[item.machine]) {
+                machineGroups[item.machine] = [];
+            }
+            machineGroups[item.machine].push({ ...item, newPosition: index });
+        });
+
+        // For each machine, find if there are jobs that need to be moved
+        const updates = [];
+
+        for (const [machine, items] of Object.entries(machineGroups)) {
+            // Get current jobs for this machine
+            const currentMachineJobs = state.jobs.filter(j => j.machine === machine && j.type === 'job');
+
+            items.forEach((item, idx) => {
+                const currentJob = state.jobs.find(j => j.id === item.jobId);
+                const currentPosition = currentMachineJobs.findIndex(j => j.id === item.jobId);
+
+                // If this job should be first (priority 0 in new order for this machine) but isn't first
+                if (currentPosition !== 0) {
+                    // We need to move it to first position
+                    updates.push({
+                        jobId: item.jobId,
+                        machine: item.machine,
+                        shouldBeFirst: item.newPosition === items[0].newPosition
+                    });
+                }
+            });
         }
 
-        // If same machine, just swap order in the array
-        if (machine1 === machine2) {
-            const machineJobs = state.jobs.filter(j => j.machine === machine1 && j.type === 'job');
-            const index1 = machineJobs.findIndex(j => j.id === jobId1);
-            const index2 = machineJobs.findIndex(j => j.id === jobId2);
+        // Apply updates by reordering the state.jobs array
+        const reorderedJobs = [];
 
-            // Swap in the main jobs array
-            const allIndex1 = state.jobs.findIndex(j => j.id === jobId1);
-            const allIndex2 = state.jobs.findIndex(j => j.id === jobId2);
+        // First, add jobs in the new priority order (only first jobs from each machine)
+        newOrder.forEach(item => {
+            const job = state.jobs.find(j => j.id === item.jobId);
+            if (job && !reorderedJobs.find(j => j.id === job.id)) {
+                reorderedJobs.push(job);
+            }
+        });
 
-            [state.jobs[allIndex1], state.jobs[allIndex2]] = [state.jobs[allIndex2], state.jobs[allIndex1]];
-        } else {
-            // Different machines - swap machines
-            await updateJob(jobId1, { machine: machine2 });
-            await updateJob(jobId2, { machine: machine1 });
-        }
+        // Then add all remaining jobs (non-first jobs from each machine)
+        state.jobs.forEach(job => {
+            if (!reorderedJobs.find(j => j.id === job.id)) {
+                reorderedJobs.push(job);
+            }
+        });
 
-        // Reload data and re-render
+        // Update state
+        state.jobs = reorderedJobs;
+
+        // Re-render
+        renderJobs();
+        renderPriorities();
+
+        showToast('Priority order updated', 'success');
+
+        // Save to backend (optional - could batch these)
+        // The order is now maintained in the array order
+
+    } catch (error) {
+        console.error('Error reordering priorities:', error);
+        showToast('Error updating priority order', 'error');
+        // Reload to get correct state
         await loadJobs();
         renderJobs();
         renderPriorities();
-        showToast('Priority order updated', 'success');
-    } catch (error) {
-        console.error('Error swapping job positions:', error);
-        showToast('Error updating priority order', 'error');
     }
 }
 
