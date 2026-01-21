@@ -246,91 +246,122 @@ function getMachinePriority(machine) {
     return priority ? priority.priority : 'N/A';
 }
 
-// Calculate material summary with cumulative hour tracking
+// Calculate material summary with per-machine cumulative hour tracking
 function calculateMaterialSummary() {
     const summary = {};
-    let cumulativeHours = 0;
 
     console.log('📊 Calculating material summary for', state.jobs.length, 'jobs');
+    console.log('📋 Using per-machine cumulative hours (each machine starts at 0)');
 
-    // Process jobs in order (by machine, then any remaining jobs)
-    const orderedJobs = [];
-    const processedJobIds = new Set();
-
-    // First, add jobs from known machines in order
+    // Process each machine independently
     MACHINES.forEach(machine => {
         const machineJobs = state.jobs.filter(job => job.machine === machine);
-        machineJobs.forEach(job => {
-            orderedJobs.push(job);
-            processedJobIds.add(job.id);
+        let machineCumulativeHours = 0;
+
+        if (machineJobs.length > 0) {
+            console.log(`\n🔧 Machine ${machine}: ${machineJobs.length} jobs`);
+        }
+
+        machineJobs.forEach((job, index) => {
+            const material = job.material || 'Unknown';
+            const totalHours = parseFloat(job.totalHours || job.setupHours) || 0;
+            const totalMaterial = parseFloat(job.totalMaterial) || 0;
+
+            if (!summary[material]) {
+                summary[material] = {
+                    week1: 0,  // 0-168 hours
+                    week2: 0   // 169-336 hours
+                };
+            }
+
+            const jobStartHour = machineCumulativeHours;
+            const jobEndHour = machineCumulativeHours + totalHours;
+
+            console.log(`  Job ${index + 1}: ${job.jobName || 'Tool #' + job.toolNumber}, Material: ${material}, Hours: ${totalHours}, Machine Cumulative: ${jobStartHour.toFixed(2)} → ${jobEndHour.toFixed(2)}`);
+
+            // Job entirely in week 1 (0-168)
+            if (jobEndHour < 169) {
+                summary[material].week1 += totalMaterial;
+                console.log(`    → All in Week 1 (0-168): ${totalMaterial} lbs`);
+            }
+            // Job entirely in week 2 (169-336)
+            else if (jobStartHour >= 169) {
+                summary[material].week2 += totalMaterial;
+                console.log(`    → All in Week 2 (169-336): ${totalMaterial} lbs`);
+            }
+            // Job spans the boundary between week 1 and week 2
+            else {
+                const hoursInWeek1 = Math.min(jobEndHour, 169) - jobStartHour;
+                const hoursInWeek2 = jobEndHour - 169;
+
+                console.log(`    → Spans both weeks:`);
+                console.log(`       Hours in Week 1 (${jobStartHour.toFixed(2)} to 169): ${hoursInWeek1.toFixed(2)} hrs`);
+                console.log(`       Hours in Week 2 (169 to ${jobEndHour.toFixed(2)}): ${hoursInWeek2.toFixed(2)} hrs`);
+
+                if (hoursInWeek1 > 0) {
+                    const week1Ratio = hoursInWeek1 / totalHours;
+                    const week1Material = totalMaterial * week1Ratio;
+                    summary[material].week1 += week1Material;
+                    console.log(`       Week 1 material: ${week1Material.toFixed(2)} lbs (${(week1Ratio * 100).toFixed(1)}%)`);
+                }
+                if (hoursInWeek2 > 0) {
+                    const week2Ratio = hoursInWeek2 / totalHours;
+                    const week2Material = totalMaterial * week2Ratio;
+                    summary[material].week2 += week2Material;
+                    console.log(`       Week 2 material: ${week2Material.toFixed(2)} lbs (${(week2Ratio * 100).toFixed(1)}%)`);
+                }
+            }
+
+            machineCumulativeHours = jobEndHour;
         });
     });
 
-    // Then add any remaining jobs that weren't in the MACHINES list
-    state.jobs.forEach(job => {
-        if (!processedJobIds.has(job.id)) {
-            orderedJobs.push(job);
-        }
-    });
+    // Process any jobs not assigned to known machines
+    const unassignedJobs = state.jobs.filter(job => !MACHINES.includes(job.machine));
+    if (unassignedJobs.length > 0) {
+        console.log(`\n⚠️  Unassigned jobs: ${unassignedJobs.length}`);
+        let unassignedCumulativeHours = 0;
 
-    console.log('📋 Processing', orderedJobs.length, 'ordered jobs');
+        unassignedJobs.forEach((job, index) => {
+            const material = job.material || 'Unknown';
+            const totalHours = parseFloat(job.totalHours || job.setupHours) || 0;
+            const totalMaterial = parseFloat(job.totalMaterial) || 0;
 
-    orderedJobs.forEach((job, index) => {
-        const material = job.material || 'Unknown';
-        const totalHours = parseFloat(job.totalHours || job.setupHours) || 0;
-        const totalMaterial = parseFloat(job.totalMaterial) || 0;
-
-        if (!summary[material]) {
-            summary[material] = {
-                week1: 0,  // 0-168 hours
-                week2: 0   // 169-336 hours
-            };
-        }
-
-        const jobStartHour = cumulativeHours;
-        const jobEndHour = cumulativeHours + totalHours;
-
-        console.log(`Job ${index + 1}: ${job.jobName || 'Tool #' + job.toolNumber} [Machine: ${job.machine}], Material: ${material}, Hours: ${totalHours}, Global Cumulative: ${jobStartHour} → ${jobEndHour}`);
-
-        // Job entirely in week 1 (0-168)
-        if (jobEndHour < 169) {
-            summary[material].week1 += totalMaterial;
-            console.log(`  → All in Week 1 (0-168): ${totalMaterial} lbs`);
-        }
-        // Job entirely in week 2 (169-336)
-        else if (jobStartHour >= 169) {
-            summary[material].week2 += totalMaterial;
-            console.log(`  → All in Week 2 (169-336): ${totalMaterial} lbs`);
-        }
-        // Job spans the boundary between week 1 and week 2
-        else {
-            // Week 1 ends at cumulative hour 168.999... (< 169)
-            // Week 2 starts at cumulative hour 169
-            const hoursInWeek1 = Math.min(jobEndHour, 169) - jobStartHour;
-            const hoursInWeek2 = jobEndHour - 169;
-
-            console.log(`  → Spans both weeks:`);
-            console.log(`     Hours in Week 1 (${jobStartHour} to 169): ${hoursInWeek1} hrs`);
-            console.log(`     Hours in Week 2 (169 to ${jobEndHour}): ${hoursInWeek2} hrs`);
-
-            if (hoursInWeek1 > 0) {
-                const week1Ratio = hoursInWeek1 / totalHours;
-                const week1Material = totalMaterial * week1Ratio;
-                summary[material].week1 += week1Material;
-                console.log(`     Week 1 material: ${week1Material.toFixed(2)} lbs (${(week1Ratio * 100).toFixed(1)}%)`);
+            if (!summary[material]) {
+                summary[material] = {
+                    week1: 0,
+                    week2: 0
+                };
             }
-            if (hoursInWeek2 > 0) {
-                const week2Ratio = hoursInWeek2 / totalHours;
-                const week2Material = totalMaterial * week2Ratio;
-                summary[material].week2 += week2Material;
-                console.log(`     Week 2 material: ${week2Material.toFixed(2)} lbs (${(week2Ratio * 100).toFixed(1)}%)`);
+
+            const jobStartHour = unassignedCumulativeHours;
+            const jobEndHour = unassignedCumulativeHours + totalHours;
+
+            console.log(`  Job ${index + 1}: ${job.jobName || 'Tool #' + job.toolNumber}, Material: ${material}, Cumulative: ${jobStartHour.toFixed(2)} → ${jobEndHour.toFixed(2)}`);
+
+            if (jobEndHour < 169) {
+                summary[material].week1 += totalMaterial;
+            } else if (jobStartHour >= 169) {
+                summary[material].week2 += totalMaterial;
+            } else {
+                const hoursInWeek1 = Math.min(jobEndHour, 169) - jobStartHour;
+                const hoursInWeek2 = jobEndHour - 169;
+
+                if (hoursInWeek1 > 0) {
+                    const week1Material = totalMaterial * (hoursInWeek1 / totalHours);
+                    summary[material].week1 += week1Material;
+                }
+                if (hoursInWeek2 > 0) {
+                    const week2Material = totalMaterial * (hoursInWeek2 / totalHours);
+                    summary[material].week2 += week2Material;
+                }
             }
-        }
 
-        cumulativeHours = jobEndHour;
-    });
+            unassignedCumulativeHours = jobEndHour;
+        });
+    }
 
-    console.log('✅ Material summary calculated:', summary);
+    console.log('\n✅ Material summary calculated:', summary);
     console.log('📦 Materials found:', Object.keys(summary));
 
     return summary;
