@@ -137,9 +137,46 @@ header h1 i {
 /* Schedule Board */
 .schedule-board {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 20px;
-    padding: 10px;
+    padding: 20px;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Custom scrollbar for schedule board */
+.schedule-board::-webkit-scrollbar {
+    width: 12px;
+}
+
+.schedule-board::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 10px;
+}
+
+.schedule-board::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 10px;
+    border: 3px solid var(--bg-secondary);
+}
+
+.schedule-board::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-hover);
+}
+
+/* Responsive grid for schedule board */
+@media (max-width: 1400px) {
+    .schedule-board {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 900px) {
+    .schedule-board {
+        grid-template-columns: 1fr;
+        max-height: calc(100vh - 250px);
+    }
 }
 
 .machine-column {
