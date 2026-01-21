@@ -707,9 +707,7 @@ form {
         justify-content: center;
     }
 
-    .schedule-board {
-        grid-template-columns: 1fr;
-    }
+    /* schedule-board responsive rules moved up to lines 168-180 for better organization */
 
     .modal-content {
         width: 95%;
