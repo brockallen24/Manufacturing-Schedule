@@ -1221,14 +1221,19 @@ function handleTabSwitch(tabName) {
 function renderPriorities() {
     const prioritiesList = document.getElementById('prioritiesList');
 
-    // Get first item (job or setup) from each machine
+    // Get first item from each machine in the order they appear in state.jobs
     const priorities = [];
-    MACHINES.forEach(machine => {
-        const machineItems = state.jobs.filter(item => item.machine === machine);
-        if (machineItems.length > 0) {
-            priorities.push(machineItems[0]); // First item (job or setup)
+    const seenMachines = new Set();
+
+    // Iterate through state.jobs in order and pick the first item from each machine
+    state.jobs.forEach(item => {
+        if (!seenMachines.has(item.machine)) {
+            priorities.push(item);
+            seenMachines.add(item.machine);
         }
     });
+
+    console.log('Rendering priorities:', priorities.map(p => ({machine: p.machine, name: p.jobName || p.toolNumber})));
 
     // Check if there are any priorities
     if (priorities.length === 0) {
@@ -1588,67 +1593,51 @@ async function reorderPriorities(newOrder) {
     try {
         console.log('Reordering priorities:', newOrder);
 
-        // Group by machine to understand what changed
-        const machineGroups = {};
-        newOrder.forEach((item, index) => {
-            if (!machineGroups[item.machine]) {
-                machineGroups[item.machine] = [];
-            }
-            machineGroups[item.machine].push({ ...item, newPosition: index });
-        });
-
-        // For each machine, find if there are jobs that need to be moved
-        const updates = [];
-
-        for (const [machine, items] of Object.entries(machineGroups)) {
-            // Get current items (jobs and setups) for this machine
-            const currentMachineItems = state.jobs.filter(j => j.machine === machine);
-
-            items.forEach((item, idx) => {
-                const currentItem = state.jobs.find(j => j.id === item.jobId);
-                const currentPosition = currentMachineItems.findIndex(j => j.id === item.jobId);
-
-                // If this item should be first (priority 0 in new order for this machine) but isn't first
-                if (currentPosition !== 0) {
-                    // We need to move it to first position
-                    updates.push({
-                        jobId: item.jobId,
-                        machine: item.machine,
-                        shouldBeFirst: item.newPosition === items[0].newPosition
-                    });
-                }
-            });
-        }
-
-        // Apply updates by reordering the state.jobs array
+        // Build a completely new jobs array based on the priority order
         const reorderedJobs = [];
 
-        // First, add items in the new priority order (first items from each machine)
+        // Track which jobs we've added
+        const addedJobIds = new Set();
+
+        // Step 1: Add all jobs from newOrder (these are the first items from each machine in new order)
         newOrder.forEach(item => {
             const job = state.jobs.find(j => j.id === item.jobId);
-            if (job && !reorderedJobs.find(j => j.id === job.id)) {
+            if (job) {
                 reorderedJobs.push(job);
+                addedJobIds.add(job.id);
             }
         });
 
-        // Then add all remaining items (non-first items from each machine)
-        state.jobs.forEach(job => {
-            if (!reorderedJobs.find(j => j.id === job.id)) {
+        // Step 2: For each machine in the new order, add any remaining jobs from that machine
+        newOrder.forEach(item => {
+            const remainingMachineJobs = state.jobs.filter(j =>
+                j.machine === item.machine &&
+                !addedJobIds.has(j.id)
+            );
+            remainingMachineJobs.forEach(job => {
                 reorderedJobs.push(job);
+                addedJobIds.add(job.id);
+            });
+        });
+
+        // Step 3: Add any jobs from machines not in the priority list (shouldn't happen, but just in case)
+        state.jobs.forEach(job => {
+            if (!addedJobIds.has(job.id)) {
+                reorderedJobs.push(job);
+                addedJobIds.add(job.id);
             }
         });
+
+        console.log('Reordered jobs array:', reorderedJobs.map(j => ({id: j.id, machine: j.machine, name: j.jobName || j.toolNumber})));
 
         // Update state
         state.jobs = reorderedJobs;
 
-        // Re-render
+        // Re-render both views
         renderJobs();
         renderPriorities();
 
         showToast('Priority order updated', 'success');
-
-        // Save to backend (optional - could batch these)
-        // The order is now maintained in the array order
 
     } catch (error) {
         console.error('Error reordering priorities:', error);
