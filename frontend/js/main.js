@@ -798,19 +798,34 @@ async function handleJobSubmit(e) {
         type: 'job',
         jobName: document.getElementById('jobName').value,
         workOrder: document.getElementById('workOrder').value,
-        numParts: parseInt(document.getElementById('numParts').value),
-        cycleTime: parseFloat(document.getElementById('cycleTime').value),
-        numCavities: parseInt(document.getElementById('numCavities').value),
+        numParts: parseInt(document.getElementById('numParts').value) || 0,
+        cycleTime: parseFloat(document.getElementById('cycleTime').value) || 0,
+        numCavities: parseInt(document.getElementById('numCavities').value) || 0,
         material: document.getElementById('material').value,
         gramsPerPart: parseFloat(document.getElementById('gramsPerPart').value) || 0,
-        totalMaterial: parseFloat(document.getElementById('totalMaterial').value),
+        totalMaterial: parseFloat(document.getElementById('totalMaterial').value) || 0,
         dollarPerPart: parseFloat(document.getElementById('dollarPerPart').value) || 0,
         dollarPerOrder: parseFloat(document.getElementById('dollarPerOrder').value) || 0,
-        totalHours: parseFloat(document.getElementById('totalHours').value),
+        totalHours: parseFloat(document.getElementById('totalHours').value) || 0,
         dueDate: document.getElementById('dueDate').value,
-        percentComplete: parseInt(document.getElementById('percentComplete').value),
+        percentComplete: parseInt(document.getElementById('percentComplete').value) || 0,
         machine: document.getElementById('machineSelect').value
     };
+
+    // Validate required fields
+    if (!jobData.jobName || !jobData.machine) {
+        showToast('Job name and machine are required', 'error');
+        return;
+    }
+
+    // Clean the data - remove NaN values and convert to proper types
+    Object.keys(jobData).forEach(key => {
+        if (typeof jobData[key] === 'number' && isNaN(jobData[key])) {
+            jobData[key] = 0;
+        }
+    });
+
+    console.log('Submitting job data:', jobData);
 
     try {
         if (state.editingJobId) {
@@ -861,22 +876,58 @@ async function handleSetupSubmit(e) {
 
 // API Functions
 async function createJob(jobData) {
+    console.log('Creating job with data:', jobData);
     const response = await fetch(`${API_BASE_URL}/jobs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(jobData)
     });
-    if (!response.ok) throw new Error('Failed to create job');
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Failed to create job. Status:', response.status, 'Response:', errorText);
+        let errorMessage = `Failed to create job (${response.status})`;
+        try {
+            const errorJson = JSON.parse(errorText);
+            if (errorJson.message) {
+                errorMessage += `: ${errorJson.message}`;
+            }
+        } catch (e) {
+            // Not JSON, use text
+            if (errorText) {
+                errorMessage += `: ${errorText}`;
+            }
+        }
+        throw new Error(errorMessage);
+    }
     return await response.json();
 }
 
 async function updateJob(jobId, jobData) {
+    console.log('Updating job', jobId, 'with data:', jobData);
     const response = await fetch(`${API_BASE_URL}/jobs/${jobId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(jobData)
     });
-    if (!response.ok) throw new Error('Failed to update job');
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Failed to update job. Status:', response.status, 'Response:', errorText);
+        let errorMessage = `Failed to update job (${response.status})`;
+        try {
+            const errorJson = JSON.parse(errorText);
+            if (errorJson.message) {
+                errorMessage += `: ${errorJson.message}`;
+            }
+        } catch (e) {
+            // Not JSON, use text
+            if (errorText) {
+                errorMessage += `: ${errorText}`;
+            }
+        }
+        throw new Error(errorMessage);
+    }
     return await response.json();
 }
 
