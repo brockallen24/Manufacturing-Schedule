@@ -1249,3 +1249,203 @@ form {
         grid-row: 3;
     }
 }
+
+/* ===========================
+   Archive View Styles
+   =========================== */
+.archive-view {
+    padding: 20px;
+    background: var(--bg-primary);
+}
+
+.archive-header {
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+.archive-header h2 {
+    margin: 0 0 8px 0;
+    color: var(--text-primary);
+    font-size: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.archive-header i {
+    color: #6b7280;
+}
+
+.archive-subtitle {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.archive-list {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.archive-item {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-left: 5px solid #6b7280;
+    transition: all 0.3s ease;
+}
+
+.archive-item:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+.archive-item[data-priority="low"] {
+    border-left-color: #10b981;
+}
+
+.archive-item[data-priority="medium"] {
+    border-left-color: #f59e0b;
+}
+
+.archive-item[data-priority="high"] {
+    border-left-color: #ef4444;
+}
+
+.archive-item[data-priority="critical"] {
+    border-left-color: #dc2626;
+}
+
+.archive-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 16px;
+}
+
+.archive-item-info {
+    flex: 1;
+}
+
+.archive-machine-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    background: #6b7280;
+    color: white;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.archive-job-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.archive-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+.archive-item-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+}
+
+.archive-detail {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.archive-detail i {
+    color: var(--primary-color);
+    font-size: 12px;
+}
+
+.archive-detail strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.archive-date-completed {
+    color: var(--success-color);
+    font-weight: 600;
+}
+
+.archive-date-completed i {
+    color: var(--success-color);
+}
+
+.archive-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-secondary);
+}
+
+.archive-empty-state i {
+    font-size: 64px;
+    margin-bottom: 20px;
+    opacity: 0.3;
+}
+
+.archive-empty-state p {
+    font-size: 18px;
+    margin: 0;
+}
+
+/* Archive button styling on job cards */
+.job-action-archive {
+    background: #f59e0b;
+}
+
+.job-action-archive:hover {
+    background: #d97706;
+}
+
+/* Archive Modal Styles */
+.modal-content-small {
+    max-width: 500px;
+}
+
+.archive-prompt {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+}
+
+/* Responsive Design for Archive */
+@media (max-width: 768px) {
+    .archive-item-header {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .archive-actions {
+        width: 100%;
+    }
+
+    .archive-actions button {
+        flex: 1;
+    }
+}

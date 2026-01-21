@@ -4,7 +4,8 @@ const state = {
     jobs: [],
     machinePriorities: [],
     editingJobId: null,
-    editingSetupId: null
+    editingSetupId: null,
+    archivingJobId: null
 };
 
 // API Configuration
@@ -37,12 +38,15 @@ function setupEventListeners() {
     // Modal controls
     const jobModal = document.getElementById('jobModal');
     const setupModal = document.getElementById('setupModal');
+    const archiveDateModal = document.getElementById('archiveDateModal');
     const addJobBtn = document.getElementById('addJobBtn');
     const addSetupBtn = document.getElementById('addSetupBtn');
     const closeBtn = document.querySelector('.close');
     const closeSetupBtn = document.querySelector('.close-setup');
+    const closeArchiveDateBtn = document.querySelector('.close-archive-date');
     const cancelBtn = document.getElementById('cancelBtn');
     const cancelSetupBtn = document.getElementById('cancelSetupBtn');
+    const cancelArchiveBtn = document.getElementById('cancelArchiveBtn');
 
     // Open modals
     addJobBtn.addEventListener('click', () => openJobModal());
@@ -51,18 +55,22 @@ function setupEventListeners() {
     // Close modals
     closeBtn.addEventListener('click', () => closeModal(jobModal));
     closeSetupBtn.addEventListener('click', () => closeModal(setupModal));
+    closeArchiveDateBtn?.addEventListener('click', () => closeModal(archiveDateModal));
     cancelBtn.addEventListener('click', () => closeModal(jobModal));
     cancelSetupBtn.addEventListener('click', () => closeModal(setupModal));
+    cancelArchiveBtn?.addEventListener('click', () => closeModal(archiveDateModal));
 
     // Click outside to close
     window.addEventListener('click', (e) => {
         if (e.target === jobModal) closeModal(jobModal);
         if (e.target === setupModal) closeModal(setupModal);
+        if (e.target === archiveDateModal) closeModal(archiveDateModal);
     });
 
     // Form submissions
     document.getElementById('jobForm').addEventListener('submit', handleJobSubmit);
     document.getElementById('setupForm').addEventListener('submit', handleSetupSubmit);
+    document.getElementById('archiveDateForm')?.addEventListener('submit', handleArchiveSubmit);
 
     // Auto-calculate total hours
     const cycleTime = document.getElementById('cycleTime');
@@ -586,8 +594,11 @@ function renderJobs() {
     // Track cumulative hours per machine
     const machineCumulativeHours = {};
 
+    // Filter out archived jobs - only show active jobs on schedule board
+    const activeJobs = state.jobs.filter(job => !job.archived);
+
     // Render jobs into their assigned machines
-    state.jobs.forEach(job => {
+    activeJobs.forEach(job => {
         const container = document.querySelector(`.jobs-container[data-machine="${job.machine}"]`);
         if (container) {
             // Remove empty state if it exists
@@ -656,6 +667,9 @@ function createJobCard(job, cumulativeHours) {
                     <button class="job-action-btn" draggable="false" onclick="editJob('${job.id}')" title="Edit">
                         <i class="fas fa-edit"></i>
                     </button>
+                    <button class="job-action-btn job-action-archive" draggable="false" onclick="archiveJob('${job.id}')" title="Archive">
+                        <i class="fas fa-archive"></i>
+                    </button>
                     <button class="job-action-btn" draggable="false" onclick="deleteJob('${job.id}')" title="Delete">
                         <i class="fas fa-trash"></i>
                     </button>
@@ -685,6 +699,9 @@ function createJobCard(job, cumulativeHours) {
                 <div class="job-actions">
                     <button class="job-action-btn" draggable="false" onclick="editJob('${job.id}')" title="Edit">
                         <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="job-action-btn job-action-archive" draggable="false" onclick="archiveJob('${job.id}')" title="Archive">
+                        <i class="fas fa-archive"></i>
                     </button>
                     <button class="job-action-btn" draggable="false" onclick="deleteJob('${job.id}')" title="Delete">
                         <i class="fas fa-trash"></i>
@@ -1021,6 +1038,75 @@ window.deleteJob = async function(jobId) {
     }
 };
 
+// Archive Job
+window.archiveJob = function(jobId) {
+    // Store the job ID for later use
+    state.archivingJobId = jobId;
+
+    // Set today's date as default
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('dateCompleted').value = today;
+
+    // Open the modal
+    document.getElementById('archiveDateModal').style.display = 'block';
+};
+
+// Handle Archive Submit
+async function handleArchiveSubmit(e) {
+    e.preventDefault();
+
+    const jobId = state.archivingJobId;
+    const dateCompleted = document.getElementById('dateCompleted').value;
+
+    if (!jobId || !dateCompleted) {
+        showToast('Job ID and date are required', 'error');
+        return;
+    }
+
+    try {
+        // Update the job with dateCompleted and archived flag
+        await updateJob(jobId, {
+            dateCompleted: dateCompleted,
+            archived: true
+        });
+
+        showToast('Job archived successfully', 'success');
+
+        // Close modal
+        document.getElementById('archiveDateModal').style.display = 'none';
+
+        // Reload and re-render
+        await loadJobs();
+        renderJobs();
+
+        // Clear the archiving job ID
+        state.archivingJobId = null;
+    } catch (error) {
+        console.error('Error archiving job:', error);
+        showToast('Failed to archive job', 'error');
+    }
+}
+
+// Unarchive Job (restore to schedule)
+window.unarchiveJob = async function(jobId) {
+    if (!confirm('Restore this job to the schedule?')) return;
+
+    try {
+        await updateJob(jobId, {
+            dateCompleted: null,
+            archived: false
+        });
+
+        showToast('Job restored to schedule', 'success');
+        await loadJobs();
+        renderJobs();
+        renderArchive();
+    } catch (error) {
+        console.error('Error unarchiving job:', error);
+        showToast('Failed to unarchive job', 'error');
+    }
+};
+
 // Cycle machine priority
 window.cyclePriority = async function(machine) {
     const priorityLevels = ['low', 'medium', 'high', 'critical'];
@@ -1212,6 +1298,11 @@ function handleTabSwitch(tabName) {
     if (tabName === 'priorities') {
         renderPriorities();
     }
+
+    // If switching to archive tab, render archive
+    if (tabName === 'archive') {
+        renderArchive();
+    }
 }
 
 // ===========================
@@ -1349,6 +1440,100 @@ function formatDate(dateString) {
     if (!dateString) return '';
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// ===========================
+// Archive View Functions
+// ===========================
+
+function renderArchive() {
+    const archiveList = document.getElementById('archiveList');
+
+    // Get archived jobs
+    const archivedJobs = state.jobs.filter(job => job.archived === true);
+
+    console.log('Rendering archive:', archivedJobs.length, 'archived jobs');
+
+    // Check if there are any archived jobs
+    if (archivedJobs.length === 0) {
+        archiveList.innerHTML = `
+            <div class="archive-empty-state">
+                <i class="fas fa-inbox"></i>
+                <p>No archived jobs yet. Archive completed jobs to see them here.</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Sort by date completed (most recent first)
+    archivedJobs.sort((a, b) => {
+        const dateA = new Date(a.dateCompleted || 0);
+        const dateB = new Date(b.dateCompleted || 0);
+        return dateB - dateA;
+    });
+
+    // Render archive items
+    archiveList.innerHTML = archivedJobs.map(job => createArchiveItem(job)).join('');
+}
+
+function createArchiveItem(job) {
+    const isSetup = job.type === 'setup';
+    const priority = job.priority || 'medium';
+
+    return `
+        <div class="archive-item" data-job-id="${job.id}" data-priority="${priority}">
+            <div class="archive-item-header">
+                <div class="archive-item-info">
+                    <div class="archive-machine-badge">
+                        <i class="fas ${isSetup ? 'fa-tools' : 'fa-briefcase'}"></i>
+                        Machine ${job.machine}
+                    </div>
+                    <h3 class="archive-job-name">${job.jobName || job.toolNumber || 'Untitled'}</h3>
+                </div>
+                <div class="archive-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="unarchiveJob('${job.id}')" title="Restore to Schedule">
+                        <i class="fas fa-undo"></i> Restore
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteJob('${job.id}')" title="Delete Permanently">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="archive-item-details">
+                ${isSetup ? `
+                    <div class="archive-detail">
+                        <i class="fas fa-wrench"></i>
+                        <span>Tool #: <strong>${job.toolNumber || 'N/A'}</strong></span>
+                    </div>
+                    <div class="archive-detail">
+                        <i class="fas fa-clock"></i>
+                        <span><strong>${(job.setupHours || 0).toFixed(1)}</strong> hrs</span>
+                    </div>
+                ` : `
+                    <div class="archive-detail">
+                        <i class="fas fa-file-alt"></i>
+                        <span>WO: <strong>${job.workOrder || 'N/A'}</strong></span>
+                    </div>
+                    <div class="archive-detail">
+                        <i class="fas fa-cubes"></i>
+                        <span><strong>${job.numParts || 0}</strong> parts</span>
+                    </div>
+                    <div class="archive-detail">
+                        <i class="fas fa-clock"></i>
+                        <span><strong>${(job.totalHours || 0).toFixed(1)}</strong> hrs</span>
+                    </div>
+                    <div class="archive-detail">
+                        <i class="fas fa-layer-group"></i>
+                        <span>${job.material || 'N/A'}</span>
+                    </div>
+                `}
+                <div class="archive-detail archive-date-completed">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>Completed: <strong>${formatDate(new Date(job.dateCompleted))}</strong></span>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 // ===========================
