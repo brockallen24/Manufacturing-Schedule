@@ -773,15 +773,19 @@ form {
         display: block !important;
     }
 
-    /* Schedule board print styles */
+    /* Schedule board print styles - maintain 3-column grid layout */
     .schedule-board.tab-content.active {
-        display: block !important;
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 20px;
         max-height: none !important;
         overflow: visible !important;
     }
 
     .schedule-board {
-        display: block;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
         page-break-inside: avoid;
     }
 
