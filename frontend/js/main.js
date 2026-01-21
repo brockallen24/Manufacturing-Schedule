@@ -1267,9 +1267,9 @@ function createPriorityItem(item) {
              data-machine="${item.machine}"
              data-priority="${priority}"
              data-type="${item.type}"
-             draggable="true"
+             draggable="false"
              ${isSetup && itemTypeBadgeColor ? `style="border-left-color: ${itemTypeBadgeColor};"` : ''}>
-            <div class="priority-drag-handle">
+            <div class="priority-drag-handle" title="Drag to reorder">
                 <i class="fas fa-grip-vertical"></i>
             </div>
             <div class="priority-job-info">
@@ -1353,16 +1353,42 @@ function formatDate(dateString) {
 let dragState = {
     draggedItem: null,
     autoScrollInterval: null,
-    scrollSpeed: 0
+    scrollSpeed: 0,
+    placeholder: null
 };
 
 function setupPrioritiesDragAndDrop() {
     const prioritiesList = document.getElementById('prioritiesList');
     const priorityItems = document.querySelectorAll('.priority-item');
 
+    // Remove any existing listeners
+    prioritiesList.removeEventListener('dragover', handlePriorityDragOver);
+    prioritiesList.removeEventListener('drop', handlePriorityDrop);
+
     priorityItems.forEach(item => {
+        // Make only the drag handle draggable
+        const dragHandle = item.querySelector('.priority-drag-handle');
+
+        // Prevent dragging from other elements
+        item.draggable = false;
+
+        if (dragHandle) {
+            dragHandle.addEventListener('mousedown', function(e) {
+                // Enable dragging on the parent item
+                item.draggable = true;
+            });
+
+            dragHandle.addEventListener('mouseup', function(e) {
+                // Disable dragging after release
+                setTimeout(() => {
+                    item.draggable = false;
+                }, 100);
+            });
+        }
+
         item.addEventListener('dragstart', handlePriorityDragStart);
         item.addEventListener('dragend', handlePriorityDragEnd);
+        item.addEventListener('dragover', handleItemDragOver);
     });
 
     // Add dragover to the container for better handling
@@ -1370,18 +1396,56 @@ function setupPrioritiesDragAndDrop() {
     prioritiesList.addEventListener('drop', handlePriorityDrop);
 
     function handlePriorityDragStart(e) {
+        // Only allow drag if draggable is true
+        if (!this.draggable) {
+            e.preventDefault();
+            return;
+        }
+
         dragState.draggedItem = this;
         this.classList.add('dragging');
+
+        // Set drag image to be the entire item
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', this.dataset.jobId);
+
+        // Create a visual placeholder
+        setTimeout(() => {
+            this.style.opacity = '0.4';
+        }, 0);
 
         // Start auto-scroll checking
         startAutoScroll();
     }
 
+    function handleItemDragOver(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (this === dragState.draggedItem) {
+            return;
+        }
+
+        // Determine if we should insert before or after this element
+        const rect = this.getBoundingClientRect();
+        const midpoint = rect.top + rect.height / 2;
+
+        if (e.clientY < midpoint) {
+            // Insert before
+            this.classList.add('drag-over-top');
+            this.classList.remove('drag-over-bottom');
+        } else {
+            // Insert after
+            this.classList.add('drag-over-bottom');
+            this.classList.remove('drag-over-top');
+        }
+    }
+
     function handlePriorityDragOver(e) {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
+
+        if (!dragState.draggedItem) return;
 
         // Update auto-scroll speed based on cursor position
         updateAutoScroll(e.clientY);
@@ -1389,35 +1453,75 @@ function setupPrioritiesDragAndDrop() {
         const afterElement = getDragAfterElement(prioritiesList, e.clientY);
         const draggable = dragState.draggedItem;
 
+        if (!draggable) return;
+
+        // Remove all drag-over classes
+        document.querySelectorAll('.priority-item').forEach(item => {
+            if (item !== draggable) {
+                item.classList.remove('drag-over-top', 'drag-over-bottom');
+            }
+        });
+
         if (afterElement == null) {
             prioritiesList.appendChild(draggable);
         } else {
-            prioritiesList.insertBefore(draggable, afterElement);
+            const rect = afterElement.getBoundingClientRect();
+            const midpoint = rect.top + rect.height / 2;
+
+            if (e.clientY < midpoint) {
+                prioritiesList.insertBefore(draggable, afterElement);
+                afterElement.classList.add('drag-over-top');
+            } else {
+                const nextSibling = afterElement.nextElementSibling;
+                if (nextSibling) {
+                    prioritiesList.insertBefore(draggable, nextSibling);
+                } else {
+                    prioritiesList.appendChild(draggable);
+                }
+                afterElement.classList.add('drag-over-bottom');
+            }
         }
     }
 
     function handlePriorityDrop(e) {
         e.preventDefault();
+        e.stopPropagation();
         stopAutoScroll();
+
+        if (!dragState.draggedItem) return;
+
+        // Remove all visual feedback
+        document.querySelectorAll('.priority-item').forEach(item => {
+            item.classList.remove('drag-over-top', 'drag-over-bottom', 'dragging');
+            item.style.opacity = '1';
+            item.draggable = false;
+        });
 
         // Get the new order
         const newOrder = Array.from(prioritiesList.querySelectorAll('.priority-item')).map(item => ({
             jobId: item.dataset.jobId,
-            machine: item.dataset.machine
+            machine: item.dataset.machine,
+            type: item.dataset.type
         }));
 
         // Save the new order
         reorderPriorities(newOrder);
+
+        dragState.draggedItem = null;
     }
 
     function handlePriorityDragEnd(e) {
         this.classList.remove('dragging');
+        this.style.opacity = '1';
+        this.draggable = false;
         stopAutoScroll();
 
         // Clean up any drag-over classes
         document.querySelectorAll('.priority-item').forEach(item => {
-            item.classList.remove('drag-over');
+            item.classList.remove('drag-over-top', 'drag-over-bottom');
         });
+
+        dragState.draggedItem = null;
     }
 
     function getDragAfterElement(container, y) {
