@@ -97,6 +97,11 @@ function setupEventListeners() {
     // Other buttons
     document.getElementById('printBtn')?.addEventListener('click', handlePrint);
     document.getElementById('clearAllBtn')?.addEventListener('click', handleClearAll);
+
+    // Tab navigation
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => handleTabSwitch(e.target.closest('.tab-btn').dataset.tab));
+    });
 }
 
 // Create Machine Columns
@@ -1184,4 +1189,294 @@ function showToast(message, type = 'success') {
         toast.style.animation = 'slideOutRight 0.3s ease';
         setTimeout(() => toast.remove(), 300);
     }, 3000);
+}
+
+// ===========================
+// Tab Navigation Functions
+// ===========================
+
+function handleTabSwitch(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+    // Update tab content
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.querySelector(`[data-tab-content="${tabName}"]`).classList.add('active');
+
+    // If switching to priorities tab, render priorities
+    if (tabName === 'priorities') {
+        renderPriorities();
+    }
+}
+
+// ===========================
+// Priorities View Functions
+// ===========================
+
+function renderPriorities() {
+    const prioritiesList = document.getElementById('prioritiesList');
+
+    // Get first job from each machine
+    const priorities = [];
+    MACHINES.forEach(machine => {
+        const machineJobs = state.jobs.filter(job => job.machine === machine && job.type === 'job');
+        if (machineJobs.length > 0) {
+            priorities.push(machineJobs[0]); // First job
+        }
+    });
+
+    // Check if there are any priorities
+    if (priorities.length === 0) {
+        prioritiesList.innerHTML = `
+            <div class="priorities-empty-state">
+                <i class="fas fa-inbox"></i>
+                <p>No jobs scheduled yet. Add jobs to see priorities here.</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Render priority items
+    prioritiesList.innerHTML = priorities.map(job => createPriorityItem(job)).join('');
+
+    // Setup drag and drop for priorities
+    setupPrioritiesDragAndDrop();
+
+    // Setup notes editing
+    setupPriorityNotesEditing();
+}
+
+function createPriorityItem(job) {
+    const priority = job.priority || 'medium';
+    const priorityNotes = job.priorityNotes || '';
+
+    return `
+        <div class="priority-item"
+             data-job-id="${job.id}"
+             data-machine="${job.machine}"
+             data-priority="${priority}"
+             draggable="true">
+            <div class="priority-drag-handle">
+                <i class="fas fa-grip-vertical"></i>
+            </div>
+            <div class="priority-job-info">
+                <div class="priority-machine-badge">
+                    <i class="fas fa-cog"></i>
+                    Machine ${job.machine}
+                </div>
+                <h3 class="priority-job-name">${job.jobName || 'Untitled Job'}</h3>
+                <div class="priority-job-details">
+                    <div class="priority-detail-item">
+                        <i class="fas fa-file-alt"></i>
+                        <span>WO: <strong>${job.workOrder || 'N/A'}</strong></span>
+                    </div>
+                    <div class="priority-detail-item">
+                        <i class="fas fa-cubes"></i>
+                        <span><strong>${job.numParts || 0}</strong> parts</span>
+                    </div>
+                    <div class="priority-detail-item">
+                        <i class="fas fa-clock"></i>
+                        <span><strong>${(job.totalHours || 0).toFixed(1)}</strong> hrs</span>
+                    </div>
+                    <div class="priority-detail-item">
+                        <i class="fas fa-layer-group"></i>
+                        <span>${job.material || 'N/A'}</span>
+                    </div>
+                    ${job.dueDate ? `
+                    <div class="priority-detail-item">
+                        <i class="fas fa-calendar"></i>
+                        <span>Due: <strong>${formatDate(job.dueDate)}</strong></span>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+            <div class="priority-notes-section">
+                <label class="priority-notes-label">
+                    <i class="fas fa-sticky-note"></i>
+                    Priority Notes
+                </label>
+                <textarea
+                    class="priority-notes-textarea"
+                    data-job-id="${job.id}"
+                    placeholder="Add notes for this priority job..."
+                >${priorityNotes}</textarea>
+            </div>
+        </div>
+    `;
+}
+
+function formatDate(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// ===========================
+// Priorities Drag and Drop
+// ===========================
+
+function setupPrioritiesDragAndDrop() {
+    const priorityItems = document.querySelectorAll('.priority-item');
+    let draggedItem = null;
+
+    priorityItems.forEach(item => {
+        item.addEventListener('dragstart', handlePriorityDragStart);
+        item.addEventListener('dragover', handlePriorityDragOver);
+        item.addEventListener('drop', handlePriorityDrop);
+        item.addEventListener('dragend', handlePriorityDragEnd);
+        item.addEventListener('dragleave', handlePriorityDragLeave);
+    });
+
+    function handlePriorityDragStart(e) {
+        draggedItem = this;
+        this.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/html', this.innerHTML);
+    }
+
+    function handlePriorityDragOver(e) {
+        if (e.preventDefault) {
+            e.preventDefault();
+        }
+        e.dataTransfer.dropEffect = 'move';
+
+        const afterElement = getDragAfterElement(e.clientY);
+        if (afterElement == null) {
+            this.classList.add('drag-over');
+        } else {
+            this.classList.remove('drag-over');
+        }
+
+        return false;
+    }
+
+    function handlePriorityDrop(e) {
+        if (e.stopPropagation) {
+            e.stopPropagation();
+        }
+
+        if (draggedItem !== this) {
+            // Get the jobs
+            const draggedJobId = draggedItem.dataset.jobId;
+            const draggedMachine = draggedItem.dataset.machine;
+            const targetJobId = this.dataset.jobId;
+            const targetMachine = this.dataset.machine;
+
+            // Swap the positions of the two jobs in their respective machines
+            swapJobPositions(draggedMachine, draggedJobId, targetMachine, targetJobId);
+        }
+
+        return false;
+    }
+
+    function handlePriorityDragEnd(e) {
+        this.classList.remove('dragging');
+        document.querySelectorAll('.priority-item').forEach(item => {
+            item.classList.remove('drag-over');
+        });
+    }
+
+    function handlePriorityDragLeave(e) {
+        this.classList.remove('drag-over');
+    }
+
+    function getDragAfterElement(y) {
+        const draggableElements = [...document.querySelectorAll('.priority-item:not(.dragging)')];
+
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+}
+
+async function swapJobPositions(machine1, jobId1, machine2, jobId2) {
+    try {
+        // Find the jobs
+        const job1 = state.jobs.find(j => j.id === jobId1);
+        const job2 = state.jobs.find(j => j.id === jobId2);
+
+        if (!job1 || !job2) {
+            showToast('Error: Jobs not found', 'error');
+            return;
+        }
+
+        // If same machine, just swap order in the array
+        if (machine1 === machine2) {
+            const machineJobs = state.jobs.filter(j => j.machine === machine1 && j.type === 'job');
+            const index1 = machineJobs.findIndex(j => j.id === jobId1);
+            const index2 = machineJobs.findIndex(j => j.id === jobId2);
+
+            // Swap in the main jobs array
+            const allIndex1 = state.jobs.findIndex(j => j.id === jobId1);
+            const allIndex2 = state.jobs.findIndex(j => j.id === jobId2);
+
+            [state.jobs[allIndex1], state.jobs[allIndex2]] = [state.jobs[allIndex2], state.jobs[allIndex1]];
+        } else {
+            // Different machines - swap machines
+            await updateJob(jobId1, { machine: machine2 });
+            await updateJob(jobId2, { machine: machine1 });
+        }
+
+        // Reload data and re-render
+        await loadJobs();
+        renderJobs();
+        renderPriorities();
+        showToast('Priority order updated', 'success');
+    } catch (error) {
+        console.error('Error swapping job positions:', error);
+        showToast('Error updating priority order', 'error');
+    }
+}
+
+// ===========================
+// Priority Notes Editing
+// ===========================
+
+function setupPriorityNotesEditing() {
+    const notesTextareas = document.querySelectorAll('.priority-notes-textarea');
+
+    notesTextareas.forEach(textarea => {
+        // Debounce to avoid too many API calls
+        let debounceTimer;
+        textarea.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(async () => {
+                await savePriorityNotes(this.dataset.jobId, this.value);
+            }, 1000); // Save 1 second after user stops typing
+        });
+
+        // Also save on blur
+        textarea.addEventListener('blur', async function() {
+            await savePriorityNotes(this.dataset.jobId, this.value);
+        });
+    });
+}
+
+async function savePriorityNotes(jobId, notes) {
+    try {
+        await updateJob(jobId, { priorityNotes: notes });
+
+        // Update in local state
+        const job = state.jobs.find(j => j.id === jobId);
+        if (job) {
+            job.priorityNotes = notes;
+        }
+
+        console.log('Priority notes saved for job:', jobId);
+    } catch (error) {
+        console.error('Error saving priority notes:', error);
+        showToast('Error saving notes', 'error');
+    }
 }

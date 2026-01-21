@@ -866,3 +866,295 @@ form {
 .toast.warning {
     border-left: 4px solid var(--warning-color);
 }
+
+/* ===========================
+   Tab Navigation Styles
+   =========================== */
+.tab-navigation {
+    display: flex;
+    gap: 8px;
+    margin: 20px 0;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 0;
+}
+
+.tab-btn {
+    background: transparent;
+    border: none;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-bottom: 3px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tab-btn:hover {
+    color: var(--primary-color);
+    background: rgba(37, 99, 235, 0.05);
+}
+
+.tab-btn.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    background: rgba(37, 99, 235, 0.08);
+}
+
+.tab-btn i {
+    font-size: 18px;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* ===========================
+   Priorities View Styles
+   =========================== */
+.priorities-view {
+    padding: 20px;
+    background: var(--bg-primary);
+}
+
+.priorities-header {
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+.priorities-header h2 {
+    margin: 0 0 8px 0;
+    color: var(--text-primary);
+    font-size: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.priorities-header i {
+    color: var(--primary-color);
+}
+
+.priorities-subtitle {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.priorities-list {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.priority-item {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    display: grid;
+    grid-template-columns: auto 1fr 400px;
+    gap: 20px;
+    align-items: start;
+    cursor: move;
+    transition: all 0.3s ease;
+    border-left: 5px solid var(--primary-color);
+}
+
+.priority-item:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+.priority-item.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+}
+
+.priority-item.drag-over {
+    border-top: 3px solid var(--primary-color);
+    padding-top: 23px;
+}
+
+.priority-drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 20px;
+    cursor: grab;
+}
+
+.priority-drag-handle:active {
+    cursor: grabbing;
+}
+
+.priority-job-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.priority-machine-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    width: fit-content;
+}
+
+.priority-job-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.priority-job-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 8px;
+}
+
+.priority-detail-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.priority-detail-item i {
+    color: var(--primary-color);
+    font-size: 12px;
+}
+
+.priority-detail-item strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.priority-notes-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.priority-notes-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.priority-notes-textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 12px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--text-primary);
+    resize: vertical;
+    transition: border-color 0.3s ease;
+}
+
+.priority-notes-textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.priority-notes-textarea::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.6;
+}
+
+.priorities-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-secondary);
+}
+
+.priorities-empty-state i {
+    font-size: 64px;
+    margin-bottom: 20px;
+    opacity: 0.3;
+}
+
+.priorities-empty-state p {
+    font-size: 18px;
+    margin: 0;
+}
+
+/* Priority Colors based on job priority */
+.priority-item[data-priority="low"] {
+    border-left-color: #10b981;
+}
+
+.priority-item[data-priority="medium"] {
+    border-left-color: #f59e0b;
+}
+
+.priority-item[data-priority="high"] {
+    border-left-color: #ef4444;
+}
+
+.priority-item[data-priority="critical"] {
+    border-left-color: #dc2626;
+}
+
+/* Responsive Design for Priorities */
+@media (max-width: 1024px) {
+    .priority-item {
+        grid-template-columns: auto 1fr;
+        grid-template-rows: auto auto;
+    }
+
+    .priority-notes-section {
+        grid-column: 2;
+        grid-row: 2;
+    }
+}
+
+@media (max-width: 768px) {
+    .priority-item {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+    }
+
+    .priority-drag-handle {
+        width: 100%;
+        height: 30px;
+    }
+
+    .priority-notes-section {
+        grid-column: 1;
+        grid-row: 3;
+    }
+}
