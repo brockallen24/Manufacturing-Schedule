@@ -40,32 +40,51 @@ app.use(helmet({
       },
 }));
 
-// HTTP Basic Authentication (optional, enabled via environment variables)
-if (process.env.BASIC_AUTH_USER && process.env.BASIC_AUTH_PASSWORD) {
-  console.log('🔒 HTTP Basic Authentication: ENABLED');
-  app.use(basicAuth({
-    users: { [process.env.BASIC_AUTH_USER]: process.env.BASIC_AUTH_PASSWORD },
-    challenge: true,
-    realm: 'Manufacturing Schedule Application'
-  }));
-} else {
-  console.log('🔓 HTTP Basic Authentication: DISABLED (no credentials configured)');
-}
-
-// CORS configuration - Allow all origins if ALLOWED_ORIGINS not set (for Heroku)
+// CORS configuration - BEFORE Basic Auth to allow OPTIONS preflight requests
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',');
 if (allowedOrigins) {
   console.log('🔒 CORS: Restricting to allowed origins:', allowedOrigins);
   app.use(cors({
     origin: allowedOrigins,
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
   }));
 } else {
   console.log('🌐 CORS: Allowing all origins (ALLOWED_ORIGINS not set)');
   app.use(cors({
     origin: true,  // Allow all origins when env var not set
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
   }));
+}
+
+// HTTP Basic Authentication (optional, enabled via environment variables)
+// Applied AFTER CORS to avoid blocking preflight requests
+if (process.env.BASIC_AUTH_USER && process.env.BASIC_AUTH_PASSWORD) {
+  console.log('🔒 HTTP Basic Authentication: ENABLED');
+  console.log('   Username:', process.env.BASIC_AUTH_USER);
+  console.log('   Password length:', process.env.BASIC_AUTH_PASSWORD.length, 'characters');
+
+  app.use(basicAuth({
+    users: { [process.env.BASIC_AUTH_USER]: process.env.BASIC_AUTH_PASSWORD },
+    challenge: true,
+    realm: 'Manufacturing Schedule Application',
+    authorizer: (username, password) => {
+      const userMatches = basicAuth.safeCompare(username, process.env.BASIC_AUTH_USER);
+      const passwordMatches = basicAuth.safeCompare(password, process.env.BASIC_AUTH_PASSWORD);
+      console.log('🔐 Auth attempt - User:', username, 'Match:', userMatches && passwordMatches);
+      return userMatches && passwordMatches;
+    },
+    authorizeAsync: false,
+    unauthorizedResponse: (req) => {
+      console.log('❌ Unauthorized access attempt from:', req.ip);
+      return 'Unauthorized - Please provide valid credentials';
+    }
+  }));
+} else {
+  console.log('🔓 HTTP Basic Authentication: DISABLED (no credentials configured)');
 }
 
 app.use(express.json());
