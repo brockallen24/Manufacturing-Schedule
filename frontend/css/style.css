@@ -951,6 +951,11 @@ form {
     display: block;
 }
 
+/* Override tab-content display for schedule-board to maintain grid layout */
+.schedule-board.tab-content.active {
+    display: grid;
+}
+
 /* ===========================
    Priorities View Styles
    =========================== */
