@@ -103,10 +103,31 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="totalMaterial">
-                        <i class="fas fa-weight-hanging"></i> Total Material (lbs) *
+                    <label for="gramsPerPart">
+                        <i class="fas fa-balance-scale"></i> Grams per Part
                     </label>
-                    <input type="number" id="totalMaterial" min="0" step="0.01" required>
+                    <input type="number" id="gramsPerPart" min="0" step="0.01">
+                </div>
+
+                <div class="form-group">
+                    <label for="totalMaterial">
+                        <i class="fas fa-weight-hanging"></i> Total Material (lbs) * (Auto-calculated)
+                    </label>
+                    <input type="number" id="totalMaterial" min="0" step="0.01" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label for="dollarPerPart">
+                        <i class="fas fa-dollar-sign"></i> $ per Part
+                    </label>
+                    <input type="number" id="dollarPerPart" min="0" step="0.01">
+                </div>
+
+                <div class="form-group">
+                    <label for="dollarPerOrder">
+                        <i class="fas fa-money-bill-wave"></i> $ per Order (Auto-calculated)
+                    </label>
+                    <input type="number" id="dollarPerOrder" min="0" step="0.01" readonly>
                 </div>
 
                 <div class="form-group">

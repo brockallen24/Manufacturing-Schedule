@@ -73,6 +73,18 @@ function setupEventListeners() {
         input?.addEventListener('input', calculateTotalHours);
     });
 
+    // Auto-calculate total material
+    const gramsPerPart = document.getElementById('gramsPerPart');
+    [gramsPerPart, numParts].forEach(input => {
+        input?.addEventListener('input', calculateTotalMaterial);
+    });
+
+    // Auto-calculate dollar per order
+    const dollarPerPart = document.getElementById('dollarPerPart');
+    [dollarPerPart, numParts].forEach(input => {
+        input?.addEventListener('input', calculateDollarPerOrder);
+    });
+
     // Percent complete sliders
     document.getElementById('percentComplete')?.addEventListener('input', (e) => {
         document.getElementById('percentCompleteValue').textContent = e.target.value;
@@ -728,7 +740,10 @@ function openJobModal(jobId = null) {
             document.getElementById('cycleTime').value = job.cycleTime || '';
             document.getElementById('numCavities').value = job.numCavities || '';
             document.getElementById('material').value = job.material || '';
+            document.getElementById('gramsPerPart').value = job.gramsPerPart || '';
             document.getElementById('totalMaterial').value = job.totalMaterial || '';
+            document.getElementById('dollarPerPart').value = job.dollarPerPart || '';
+            document.getElementById('dollarPerOrder').value = job.dollarPerOrder || '';
             document.getElementById('totalHours').value = job.totalHours || '';
             document.getElementById('dueDate').value = job.dueDate || '';
             document.getElementById('percentComplete').value = job.percentComplete || 0;
@@ -787,7 +802,10 @@ async function handleJobSubmit(e) {
         cycleTime: parseFloat(document.getElementById('cycleTime').value),
         numCavities: parseInt(document.getElementById('numCavities').value),
         material: document.getElementById('material').value,
+        gramsPerPart: parseFloat(document.getElementById('gramsPerPart').value) || 0,
         totalMaterial: parseFloat(document.getElementById('totalMaterial').value),
+        dollarPerPart: parseFloat(document.getElementById('dollarPerPart').value) || 0,
+        dollarPerOrder: parseFloat(document.getElementById('dollarPerOrder').value) || 0,
         totalHours: parseFloat(document.getElementById('totalHours').value),
         dueDate: document.getElementById('dueDate').value,
         percentComplete: parseInt(document.getElementById('percentComplete').value),
@@ -997,6 +1015,31 @@ function calculateTotalHours() {
     const totalHoursInput = document.getElementById('totalHours');
     if (totalHoursInput) {
         totalHoursInput.value = totalHours;
+    }
+}
+
+function calculateTotalMaterial() {
+    const gramsPerPart = parseFloat(document.getElementById('gramsPerPart')?.value) || 0;
+    const numParts = parseInt(document.getElementById('numParts')?.value) || 0;
+
+    // Convert grams to pounds: (grams / 454) * numParts
+    const totalMaterialLbs = (gramsPerPart / 454) * numParts;
+
+    const totalMaterialInput = document.getElementById('totalMaterial');
+    if (totalMaterialInput) {
+        totalMaterialInput.value = totalMaterialLbs.toFixed(2);
+    }
+}
+
+function calculateDollarPerOrder() {
+    const dollarPerPart = parseFloat(document.getElementById('dollarPerPart')?.value) || 0;
+    const numParts = parseInt(document.getElementById('numParts')?.value) || 0;
+
+    const dollarPerOrder = dollarPerPart * numParts;
+
+    const dollarPerOrderInput = document.getElementById('dollarPerOrder');
+    if (dollarPerOrderInput) {
+        dollarPerOrderInput.value = dollarPerOrder.toFixed(2);
     }
 }
 
