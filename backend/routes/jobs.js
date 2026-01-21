@@ -46,27 +46,32 @@ router.get('/:id', async (req, res) => {
 
 // POST create new job
 router.post('/', async (req, res) => {
+  const jobData = req.body;
+
   try {
-    const jobData = req.body;
+    console.log('Received job creation request:', JSON.stringify(jobData, null, 2));
+
     // Validate required fields
     if (!jobData.machine) {
       return res.status(400).json({ error: 'Machine is required' });
     }
 
     // Airtable field names match frontend exactly (camelCase)
-    // Remove undefined fields before sending
+    // Remove undefined fields and null values before sending
     const cleanedData = {};
     Object.keys(jobData).forEach(key => {
-      if (jobData[key] !== undefined) {
+      if (jobData[key] !== undefined && jobData[key] !== null && jobData[key] !== '') {
         cleanedData[key] = jobData[key];
       }
     });
 
-    console.log('Creating job with fields:', cleanedData);
+    console.log('Creating job with cleaned fields:', JSON.stringify(cleanedData, null, 2));
 
     const records = await jobsTable.create([
       { fields: cleanedData }
     ]);
+
+    console.log('Job created successfully:', records[0].id);
 
     res.status(201).json({
       job: mapAirtableToFrontend(records[0]),
@@ -77,14 +82,25 @@ router.post('/', async (req, res) => {
     console.error('Error creating job:', error);
     console.error('Error stack:', error.stack);
     console.error('Error name:', error.name);
-    console.error('Full error object:', JSON.stringify(error, null, 2));
-    console.error('Job data attempting to create:', jobData);
-    res.status(500).json({
+    console.error('Job data that failed:', JSON.stringify(jobData, null, 2));
+
+    // Try to parse Airtable-specific errors
+    let errorMessage = error.message;
+    let statusCode = 500;
+
+    if (error.statusCode) {
+      statusCode = error.statusCode;
+    }
+
+    if (error.error) {
+      errorMessage = `${error.error}: ${error.message}`;
+    }
+
+    res.status(statusCode).json({
       error: 'Failed to create job',
-      message: error.message,
+      message: errorMessage,
       errorName: error.name,
       errorDetails: error.toString(),
-      stack: process.env.NODE_ENV === 'development' ? error.stack : 'Hidden in production',
       jobDataSent: jobData
     });
   }
