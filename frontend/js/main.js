@@ -1495,6 +1495,15 @@ function setupPrioritiesDragAndDrop() {
 
         if (!dragState.draggedItem) return;
 
+        // Get the new order from the DOM BEFORE cleaning up
+        const newOrder = Array.from(prioritiesList.querySelectorAll('.priority-item')).map(item => ({
+            jobId: item.dataset.jobId,
+            machine: item.dataset.machine,
+            type: item.dataset.type
+        }));
+
+        console.log('DROP: New order from DOM:', newOrder.map(o => `${o.machine}:${o.jobId.substring(0, 8)}`).join(', '));
+
         // Remove all visual feedback
         document.querySelectorAll('.priority-item').forEach(item => {
             item.classList.remove('drag-over-top', 'drag-over-bottom', 'dragging');
@@ -1502,15 +1511,8 @@ function setupPrioritiesDragAndDrop() {
             item.draggable = false;
         });
 
-        // Get the new order
-        const newOrder = Array.from(prioritiesList.querySelectorAll('.priority-item')).map(item => ({
-            jobId: item.dataset.jobId,
-            machine: item.dataset.machine,
-            type: item.dataset.type
-        }));
-
-        // Save the new order
-        reorderPriorities(newOrder);
+        // Save the new order (but DON'T re-render - keep DOM as-is)
+        reorderPriorities(newOrder, false); // Pass false to skip re-render
 
         dragState.draggedItem = null;
     }
@@ -1589,9 +1591,10 @@ function updateAutoScroll(clientY) {
     }
 }
 
-async function reorderPriorities(newOrder) {
+async function reorderPriorities(newOrder, shouldRerender = true) {
     try {
-        console.log('Reordering priorities:', newOrder);
+        console.log('🔄 REORDER: Starting with', newOrder.length, 'priority items');
+        console.log('🔄 REORDER: New order:', newOrder.map(o => `${o.machine}:${o.type}`).join(', '));
 
         // Build a completely new jobs array based on the priority order
         const reorderedJobs = [];
@@ -1605,6 +1608,9 @@ async function reorderPriorities(newOrder) {
             if (job) {
                 reorderedJobs.push(job);
                 addedJobIds.add(job.id);
+                console.log(`  ✅ Added priority: ${job.machine} - ${job.jobName || job.toolNumber}`);
+            } else {
+                console.log(`  ❌ NOT FOUND: ${item.jobId}`);
             }
         });
 
@@ -1617,6 +1623,7 @@ async function reorderPriorities(newOrder) {
             remainingMachineJobs.forEach(job => {
                 reorderedJobs.push(job);
                 addedJobIds.add(job.id);
+                console.log(`  ➕ Added remaining: ${job.machine} - ${job.jobName || job.toolNumber}`);
             });
         });
 
@@ -1625,22 +1632,34 @@ async function reorderPriorities(newOrder) {
             if (!addedJobIds.has(job.id)) {
                 reorderedJobs.push(job);
                 addedJobIds.add(job.id);
+                console.log(`  ⚠️ Added orphan: ${job.machine} - ${job.jobName || job.toolNumber}`);
             }
         });
 
-        console.log('Reordered jobs array:', reorderedJobs.map(j => ({id: j.id, machine: j.machine, name: j.jobName || j.toolNumber})));
+        console.log('✅ REORDER: Final array has', reorderedJobs.length, 'items');
+        console.log('✅ REORDER: Original had', state.jobs.length, 'items');
 
         // Update state
+        const oldJobs = state.jobs;
         state.jobs = reorderedJobs;
 
-        // Re-render both views
-        renderJobs();
-        renderPriorities();
+        console.log('💾 REORDER: State updated');
+
+        // Only re-render if requested
+        if (shouldRerender) {
+            console.log('🎨 REORDER: Re-rendering views...');
+            renderJobs();
+            renderPriorities();
+        } else {
+            console.log('⏭️ REORDER: Skipping re-render, keeping DOM as-is');
+            // Just update the schedule board silently
+            renderJobs();
+        }
 
         showToast('Priority order updated', 'success');
 
     } catch (error) {
-        console.error('Error reordering priorities:', error);
+        console.error('❌ Error reordering priorities:', error);
         showToast('Error updating priority order', 'error');
         // Reload to get correct state
         await loadJobs();
