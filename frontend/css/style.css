@@ -1517,6 +1517,60 @@ form {
     margin-bottom: 20px;
 }
 
+/* Login Modal Styles */
+#loginModal {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
+#loginModal .modal-content {
+    max-width: 400px;
+}
+
+.login-prompt {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.login-error {
+    background: #fee;
+    color: #c33;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#currentUser {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+/* Read-Only Mode (Shop Floor Users) */
+body.read-only-mode .job-card {
+    cursor: default !important;
+}
+
+body.read-only-mode .job-card[draggable="true"] {
+    cursor: default !important;
+}
+
+body.read-only-mode .machine-priority {
+    cursor: default !important;
+    pointer-events: none;
+}
+
+body.read-only-mode .priority-notes-textarea[readonly] {
+    background-color: #f9fafb;
+    cursor: default;
+}
+
 /* Responsive Design for Archive */
 @media (max-width: 768px) {
     .archive-item-header {

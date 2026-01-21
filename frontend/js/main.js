@@ -5,7 +5,15 @@ const state = {
     machinePriorities: [],
     editingJobId: null,
     editingSetupId: null,
-    archivingJobId: null
+    archivingJobId: null,
+    currentUser: null,
+    userRole: null
+};
+
+// User credentials (in production, this should be handled by backend)
+const USERS = {
+    'TTAdmin': { password: 'Admin1', role: 'admin' },
+    'TTShop': { password: 'Shopfloor', role: 'shopfloor' }
 };
 
 // API Configuration
@@ -22,15 +30,115 @@ const MACHINES = [
 
 // Initialize Application
 document.addEventListener('DOMContentLoaded', () => {
+    checkAuthentication();
+});
+
+// Check Authentication
+function checkAuthentication() {
+    const savedUser = sessionStorage.getItem('currentUser');
+    const savedRole = sessionStorage.getItem('userRole');
+
+    if (savedUser && savedRole) {
+        state.currentUser = savedUser;
+        state.userRole = savedRole;
+        startApp();
+    } else {
+        showLoginModal();
+    }
+}
+
+// Show Login Modal
+function showLoginModal() {
+    const loginModal = document.getElementById('loginModal');
+    loginModal.style.display = 'flex';
+
+    // Setup login form handler
+    const loginForm = document.getElementById('loginForm');
+    loginForm.onsubmit = handleLogin;
+}
+
+// Handle Login
+function handleLogin(e) {
+    e.preventDefault();
+
+    const username = document.getElementById('loginUsername').value;
+    const password = document.getElementById('loginPassword').value;
+    const loginError = document.getElementById('loginError');
+
+    if (USERS[username] && USERS[username].password === password) {
+        // Login successful
+        state.currentUser = username;
+        state.userRole = USERS[username].role;
+
+        // Save to session storage
+        sessionStorage.setItem('currentUser', username);
+        sessionStorage.setItem('userRole', USERS[username].role);
+
+        // Hide login modal and start app
+        document.getElementById('loginModal').style.display = 'none';
+        loginError.style.display = 'none';
+        document.getElementById('loginForm').reset();
+
+        startApp();
+    } else {
+        // Login failed
+        loginError.style.display = 'flex';
+        document.getElementById('loginPassword').value = '';
+    }
+}
+
+// Handle Logout
+function handleLogout() {
+    if (confirm('Are you sure you want to logout?')) {
+        sessionStorage.removeItem('currentUser');
+        sessionStorage.removeItem('userRole');
+        location.reload();
+    }
+}
+
+// Start Application
+function startApp() {
     initializeApp();
     setupEventListeners();
+    applyRoleRestrictions();
     loadData();
-});
+    updateUserDisplay();
+}
 
 // Initialize Application
 function initializeApp() {
     createMachineColumns();
     console.log('Manufacturing Schedule initialized');
+}
+
+// Update User Display
+function updateUserDisplay() {
+    const userSpan = document.getElementById('currentUser');
+    if (userSpan) {
+        userSpan.textContent = `(${state.currentUser})`;
+    }
+}
+
+// Apply Role-Based Restrictions
+function applyRoleRestrictions() {
+    if (state.userRole === 'shopfloor') {
+        // Hide all action buttons for shop floor users
+        const elementsToHide = [
+            'addJobBtn',
+            'addSetupBtn',
+            'clearAllBtn'
+        ];
+
+        elementsToHide.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.style.display = 'none';
+            }
+        });
+
+        // Add read-only class to body for CSS targeting
+        document.body.classList.add('read-only-mode');
+    }
 }
 
 // Setup Event Listeners
@@ -105,6 +213,7 @@ function setupEventListeners() {
     // Other buttons
     document.getElementById('printBtn')?.addEventListener('click', handlePrint);
     document.getElementById('clearAllBtn')?.addEventListener('click', handleClearAll);
+    document.getElementById('logoutBtn')?.addEventListener('click', handleLogout);
 
     // Tab navigation
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -636,7 +745,9 @@ function createJobCard(job, cumulativeHours) {
         card.className = 'job-card';
     }
 
-    card.setAttribute('draggable', 'true');
+    // Only make draggable for admin users
+    const isDraggable = state.userRole === 'admin';
+    card.setAttribute('draggable', isDraggable ? 'true' : 'false');
     card.setAttribute('data-job-id', job.id);
 
     // Add drag event listeners
@@ -656,6 +767,21 @@ function createJobCard(job, cumulativeHours) {
         else if (daysUntilDue <= 3) dueDateClass = 'due-soon';
     }
 
+    // Only show action buttons for admin users
+    const actionButtons = state.userRole === 'admin' ? `
+        <div class="job-actions">
+            <button class="job-action-btn" draggable="false" onclick="editJob('${job.id}')" title="Edit">
+                <i class="fas fa-edit"></i>
+            </button>
+            <button class="job-action-btn job-action-archive" draggable="false" onclick="archiveJob('${job.id}')" title="Archive">
+                <i class="fas fa-archive"></i>
+            </button>
+            <button class="job-action-btn" draggable="false" onclick="deleteJob('${job.id}')" title="Delete">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    ` : '';
+
     if (job.type === 'setup') {
         card.innerHTML = `
             <div class="job-header">
@@ -663,17 +789,7 @@ function createJobCard(job, cumulativeHours) {
                     <div class="job-name"><i class="fas fa-tools"></i> Tool #${job.toolNumber}</div>
                     <div class="work-order">Status: ${job.toolReady === 'yes' ? 'Ready' : 'Not Ready'}</div>
                 </div>
-                <div class="job-actions">
-                    <button class="job-action-btn" draggable="false" onclick="editJob('${job.id}')" title="Edit">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="job-action-btn job-action-archive" draggable="false" onclick="archiveJob('${job.id}')" title="Archive">
-                        <i class="fas fa-archive"></i>
-                    </button>
-                    <button class="job-action-btn" draggable="false" onclick="deleteJob('${job.id}')" title="Delete">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
+                ${actionButtons}
             </div>
             <div class="job-details">
                 <div class="job-detail">
@@ -696,17 +812,7 @@ function createJobCard(job, cumulativeHours) {
                     <div class="job-name">${job.jobName}</div>
                     <div class="work-order">WO: ${job.workOrder}</div>
                 </div>
-                <div class="job-actions">
-                    <button class="job-action-btn" draggable="false" onclick="editJob('${job.id}')" title="Edit">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="job-action-btn job-action-archive" draggable="false" onclick="archiveJob('${job.id}')" title="Archive">
-                        <i class="fas fa-archive"></i>
-                    </button>
-                    <button class="job-action-btn" draggable="false" onclick="deleteJob('${job.id}')" title="Delete">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
+                ${actionButtons}
             </div>
             ${dueDate ? `<div class="due-date-indicator ${dueDateClass}">${formatDate(dueDate)}</div>` : ''}
             <div class="job-details">
@@ -1109,6 +1215,11 @@ window.unarchiveJob = async function(jobId) {
 
 // Cycle machine priority
 window.cyclePriority = async function(machine) {
+    // Only allow admin users to change priority
+    if (state.userRole !== 'admin') {
+        return;
+    }
+
     const priorityLevels = ['low', 'medium', 'high', 'critical'];
     const currentPriority = getMachinePriority(machine);
     const currentIndex = priorityLevels.indexOf(currentPriority);
@@ -1357,6 +1468,16 @@ function createPriorityItem(item) {
     const itemTypeIcon = isSetup ? 'fa-tools' : 'fa-briefcase';
     const itemTypeBadgeColor = isSetup ? (item.toolReady === 'ready' ? '#10b981' : '#ef4444') : '';
 
+    // Only show drag handle for admin users
+    const dragHandle = state.userRole === 'admin' ? `
+        <div class="priority-drag-handle" title="Drag to reorder">
+            <i class="fas fa-grip-vertical"></i>
+        </div>
+    ` : '';
+
+    // Disable textarea for shop floor users
+    const textareaDisabled = state.userRole === 'shopfloor' ? 'readonly' : '';
+
     return `
         <div class="priority-item ${itemTypeClass}"
              data-job-id="${item.id}"
@@ -1365,9 +1486,7 @@ function createPriorityItem(item) {
              data-type="${item.type}"
              draggable="false"
              ${isSetup && itemTypeBadgeColor ? `style="border-left-color: ${itemTypeBadgeColor};"` : ''}>
-            <div class="priority-drag-handle" title="Drag to reorder">
-                <i class="fas fa-grip-vertical"></i>
-            </div>
+            ${dragHandle}
             <div class="priority-job-info">
                 <div class="priority-machine-badge" ${isSetup && itemTypeBadgeColor ? `style="background-color: ${itemTypeBadgeColor};"` : ''}>
                     <i class="fas ${itemTypeIcon}"></i>
@@ -1430,6 +1549,7 @@ function createPriorityItem(item) {
                     class="priority-notes-textarea"
                     data-job-id="${item.id}"
                     placeholder="Add notes for this priority ${isSetup ? 'setup' : 'job'}..."
+                    ${textareaDisabled}
                 >${priorityNotes}</textarea>
             </div>
         </div>
@@ -1480,6 +1600,18 @@ function createArchiveItem(job) {
     const isSetup = job.type === 'setup';
     const priority = job.priority || 'medium';
 
+    // Only show archive actions for admin users
+    const archiveActions = state.userRole === 'admin' ? `
+        <div class="archive-actions">
+            <button class="btn btn-secondary btn-sm" onclick="unarchiveJob('${job.id}')" title="Restore to Schedule">
+                <i class="fas fa-undo"></i> Restore
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="deleteJob('${job.id}')" title="Delete Permanently">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    ` : '';
+
     return `
         <div class="archive-item" data-job-id="${job.id}" data-priority="${priority}">
             <div class="archive-item-header">
@@ -1490,14 +1622,7 @@ function createArchiveItem(job) {
                     </div>
                     <h3 class="archive-job-name">${job.jobName || job.toolNumber || 'Untitled'}</h3>
                 </div>
-                <div class="archive-actions">
-                    <button class="btn btn-secondary btn-sm" onclick="unarchiveJob('${job.id}')" title="Restore to Schedule">
-                        <i class="fas fa-undo"></i> Restore
-                    </button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteJob('${job.id}')" title="Delete Permanently">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
+                ${archiveActions}
             </div>
             <div class="archive-item-details">
                 ${isSetup ? `
@@ -1548,6 +1673,11 @@ let dragState = {
 };
 
 function setupPrioritiesDragAndDrop() {
+    // Skip drag and drop setup for shop floor users
+    if (state.userRole !== 'admin') {
+        return;
+    }
+
     const prioritiesList = document.getElementById('prioritiesList');
     const priorityItems = document.querySelectorAll('.priority-item');
 

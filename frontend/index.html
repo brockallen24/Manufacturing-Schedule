@@ -44,6 +44,9 @@
                 <button id="clearAllBtn" class="btn btn-danger">
                     <i class="fas fa-trash-alt"></i> Clear All
                 </button>
+                <button id="logoutBtn" class="btn btn-secondary" style="margin-left: auto;">
+                    <i class="fas fa-sign-out-alt"></i> Logout <span id="currentUser"></span>
+                </button>
             </div>
         </header>
 
@@ -341,6 +344,38 @@
                     <button type="button" class="btn btn-secondary" id="cancelArchiveBtn">Cancel</button>
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-archive"></i> Archive Job
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal" style="display: none;">
+        <div class="modal-content modal-content-small">
+            <div class="modal-header">
+                <h2><i class="fas fa-lock"></i> Manufacturing Schedule Login</h2>
+            </div>
+            <form id="loginForm">
+                <p class="login-prompt">Please sign in to access the application</p>
+                <div class="form-group">
+                    <label for="loginUsername">
+                        <i class="fas fa-user"></i> Username *
+                    </label>
+                    <input type="text" id="loginUsername" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">
+                        <i class="fas fa-key"></i> Password *
+                    </label>
+                    <input type="password" id="loginPassword" required autocomplete="current-password">
+                </div>
+                <div id="loginError" class="login-error" style="display: none;">
+                    <i class="fas fa-exclamation-circle"></i> Invalid username or password
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        <i class="fas fa-sign-in-alt"></i> Sign In
                     </button>
                 </div>
             </form>
