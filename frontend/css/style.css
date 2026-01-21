@@ -739,9 +739,16 @@ form {
 }
 
 /* Print Styles */
+/* Remove browser-generated headers and footers from print */
+@page {
+    margin: 0;
+    size: auto;
+}
+
 @media print {
     body {
         background: white;
+        margin: 1cm;
     }
 
     header {
