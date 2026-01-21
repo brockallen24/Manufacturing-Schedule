@@ -749,9 +749,28 @@ form {
         border-bottom: 2px solid #000;
     }
 
+    /* Hide buttons and navigation during print */
     .header-actions,
-    .job-actions {
+    .job-actions,
+    .tab-navigation {
         display: none !important;
+    }
+
+    /* Hide inactive tab content */
+    .tab-content:not(.active) {
+        display: none !important;
+    }
+
+    /* Ensure active tab is visible */
+    .tab-content.active {
+        display: block !important;
+    }
+
+    /* Schedule board print styles */
+    .schedule-board.tab-content.active {
+        display: block !important;
+        max-height: none !important;
+        overflow: visible !important;
     }
 
     .schedule-board {
@@ -805,6 +824,42 @@ form {
         border: 1px solid #ddd;
     }
 
+    /* Priorities view print styles */
+    .priorities-view {
+        background: white !important;
+    }
+
+    .priority-item {
+        page-break-inside: avoid;
+        border: 1px solid #000;
+        margin-bottom: 10px;
+    }
+
+    .priority-drag-handle {
+        display: none !important;
+    }
+
+    .priority-notes-textarea {
+        border: 1px solid #ddd;
+        background: white;
+    }
+
+    /* Archive view print styles */
+    .archive-view {
+        background: white !important;
+    }
+
+    .archive-item {
+        page-break-inside: avoid;
+        border: 1px solid #000;
+        margin-bottom: 10px;
+    }
+
+    .archive-actions {
+        display: none !important;
+    }
+
+    /* Hide modals during print */
     .modal {
         display: none !important;
     }
