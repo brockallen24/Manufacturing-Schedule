@@ -358,17 +358,22 @@
             </div>
             <form id="loginForm">
                 <p class="login-prompt">Please sign in to access the application</p>
+                <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 13px;">
+                    <div style="font-weight: 600; margin-bottom: 8px; color: #0369a1;">Valid Credentials:</div>
+                    <div style="margin-bottom: 4px;"><strong>Admin:</strong> TTAdmin / Admin1</div>
+                    <div><strong>Shop:</strong> TTShop / Shopfloor</div>
+                </div>
                 <div class="form-group">
                     <label for="loginUsername">
                         <i class="fas fa-user"></i> Username *
                     </label>
-                    <input type="text" id="loginUsername" required autocomplete="username">
+                    <input type="text" id="loginUsername" required autocomplete="username" placeholder="TTAdmin or TTShop">
                 </div>
                 <div class="form-group">
                     <label for="loginPassword">
                         <i class="fas fa-key"></i> Password *
                     </label>
-                    <input type="password" id="loginPassword" required autocomplete="current-password">
+                    <input type="password" id="loginPassword" required autocomplete="current-password" placeholder="Enter password">
                 </div>
                 <div id="loginError" class="login-error" style="display: none;">
                     <i class="fas fa-exclamation-circle"></i> Invalid username or password

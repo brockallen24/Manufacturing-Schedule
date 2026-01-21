@@ -12,9 +12,14 @@ const state = {
 
 // User credentials (in production, this should be handled by backend)
 const USERS = {
-    'TTAdmin': { password: 'Admin1', role: 'admin' },
-    'TTShop': { password: 'Shopfloor', role: 'shopfloor' }
+    'ttadmin': { password: 'Admin1', role: 'admin' },
+    'ttshop': { password: 'Shopfloor', role: 'shopfloor' }
 };
+
+// Helper function to normalize username
+function normalizeUsername(username) {
+    return username.toLowerCase().trim();
+}
 
 // API Configuration
 const API_BASE_URL = window.location.hostname === 'localhost'
@@ -61,17 +66,30 @@ function showLoginModal() {
 function handleLogin(e) {
     e.preventDefault();
 
-    const username = document.getElementById('loginUsername').value;
+    const usernameInput = document.getElementById('loginUsername').value.trim();
     const password = document.getElementById('loginPassword').value;
     const loginError = document.getElementById('loginError');
 
+    // Normalize username to lowercase for case-insensitive login
+    const username = normalizeUsername(usernameInput);
+
+    console.log('Login attempt:', { originalUsername: usernameInput, normalizedUsername: username, passwordLength: password.length });
+    console.log('Available users:', Object.keys(USERS));
+    console.log('User exists:', !!USERS[username]);
+    if (USERS[username]) {
+        console.log('Expected password:', USERS[username].password);
+        console.log('Provided password:', password);
+        console.log('Password match:', USERS[username].password === password);
+    }
+
     if (USERS[username] && USERS[username].password === password) {
         // Login successful
-        state.currentUser = username;
+        console.log('Login successful for:', username);
+        state.currentUser = usernameInput; // Store the original input for display
         state.userRole = USERS[username].role;
 
         // Save to session storage
-        sessionStorage.setItem('currentUser', username);
+        sessionStorage.setItem('currentUser', usernameInput);
         sessionStorage.setItem('userRole', USERS[username].role);
 
         // Hide login modal and start app
@@ -82,6 +100,7 @@ function handleLogin(e) {
         startApp();
     } else {
         // Login failed
+        console.log('Login failed for:', username);
         loginError.style.display = 'flex';
         document.getElementById('loginPassword').value = '';
     }
