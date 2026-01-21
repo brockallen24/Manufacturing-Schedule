@@ -55,36 +55,51 @@ function checkAuthentication() {
 // Show Login Modal
 function showLoginModal() {
     const loginModal = document.getElementById('loginModal');
-    loginModal.style.display = 'flex';
+    loginModal.classList.add('show');
+    loginModal.style.display = ''; // Clear any inline styles
 
     // Setup login form handler
     const loginForm = document.getElementById('loginForm');
     loginForm.onsubmit = handleLogin;
+
+    console.log('🔓 Login modal shown');
 }
 
 // Handle Login
 function handleLogin(e) {
     e.preventDefault();
+    e.stopPropagation();
+
+    console.log('🔐 Login form submitted');
 
     const usernameInput = document.getElementById('loginUsername').value.trim();
-    const password = document.getElementById('loginPassword').value;
+    const passwordInput = document.getElementById('loginPassword').value;
+    const password = passwordInput.trim(); // Trim password too
     const loginError = document.getElementById('loginError');
+    const loginModal = document.getElementById('loginModal');
 
     // Normalize username to lowercase for case-insensitive login
     const username = normalizeUsername(usernameInput);
 
-    console.log('Login attempt:', { originalUsername: usernameInput, normalizedUsername: username, passwordLength: password.length });
-    console.log('Available users:', Object.keys(USERS));
-    console.log('User exists:', !!USERS[username]);
+    console.log('📝 Login details:', {
+        originalUsername: usernameInput,
+        normalizedUsername: username,
+        password: '***' + password.slice(-2),
+        passwordLength: password.length
+    });
+    console.log('👥 Available users:', Object.keys(USERS));
+    console.log('✓ User exists:', !!USERS[username]);
+
     if (USERS[username]) {
-        console.log('Expected password:', USERS[username].password);
-        console.log('Provided password:', password);
-        console.log('Password match:', USERS[username].password === password);
+        console.log('🔑 Expected password:', USERS[username].password);
+        console.log('🔑 Provided password:', password);
+        console.log('✓ Password match:', USERS[username].password === password);
+        console.log('✓ Exact match (no trim):', USERS[username].password === passwordInput);
     }
 
     if (USERS[username] && USERS[username].password === password) {
         // Login successful
-        console.log('Login successful for:', username);
+        console.log('✅ Login successful for:', username);
         state.currentUser = usernameInput; // Store the original input for display
         state.userRole = USERS[username].role;
 
@@ -93,17 +108,22 @@ function handleLogin(e) {
         sessionStorage.setItem('userRole', USERS[username].role);
 
         // Hide login modal and start app
-        document.getElementById('loginModal').style.display = 'none';
+        loginModal.classList.remove('show');
+        loginModal.style.display = 'none';
         loginError.style.display = 'none';
         document.getElementById('loginForm').reset();
 
+        console.log('🚀 Starting app...');
         startApp();
     } else {
         // Login failed
-        console.log('Login failed for:', username);
+        console.log('❌ Login failed for:', username);
+        console.log('❌ Reason:', !USERS[username] ? 'User not found' : 'Password mismatch');
         loginError.style.display = 'flex';
         document.getElementById('loginPassword').value = '';
     }
+
+    return false; // Prevent any form submission
 }
 
 // Handle Logout
