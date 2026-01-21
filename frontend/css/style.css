@@ -1132,6 +1132,20 @@ form {
     border-left-color: #dc2626;
 }
 
+/* Setup/Maintenance item styling */
+.priority-item-setup {
+    background: linear-gradient(to right, rgba(16, 185, 129, 0.03), white);
+}
+
+.priority-item-setup .priority-machine-badge {
+    font-weight: 700;
+}
+
+/* Job item default styling */
+.priority-item-job {
+    /* Default job styling - uses standard priority colors */
+}
+
 /* Responsive Design for Priorities */
 @media (max-width: 1024px) {
     .priority-item {

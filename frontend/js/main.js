@@ -1221,12 +1221,12 @@ function handleTabSwitch(tabName) {
 function renderPriorities() {
     const prioritiesList = document.getElementById('prioritiesList');
 
-    // Get first job from each machine
+    // Get first item (job or setup) from each machine
     const priorities = [];
     MACHINES.forEach(machine => {
-        const machineJobs = state.jobs.filter(job => job.machine === machine && job.type === 'job');
-        if (machineJobs.length > 0) {
-            priorities.push(machineJobs[0]); // First job
+        const machineItems = state.jobs.filter(item => item.machine === machine);
+        if (machineItems.length > 0) {
+            priorities.push(machineItems[0]); // First item (job or setup)
         }
     });
 
@@ -1235,14 +1235,14 @@ function renderPriorities() {
         prioritiesList.innerHTML = `
             <div class="priorities-empty-state">
                 <i class="fas fa-inbox"></i>
-                <p>No jobs scheduled yet. Add jobs to see priorities here.</p>
+                <p>No jobs or setups scheduled yet. Add items to see priorities here.</p>
             </div>
         `;
         return;
     }
 
     // Render priority items
-    prioritiesList.innerHTML = priorities.map(job => createPriorityItem(job)).join('');
+    prioritiesList.innerHTML = priorities.map(item => createPriorityItem(item)).join('');
 
     // Setup drag and drop for priorities
     setupPrioritiesDragAndDrop();
@@ -1251,48 +1251,78 @@ function renderPriorities() {
     setupPriorityNotesEditing();
 }
 
-function createPriorityItem(job) {
-    const priority = job.priority || 'medium';
-    const priorityNotes = job.priorityNotes || '';
+function createPriorityItem(item) {
+    const priority = item.priority || 'medium';
+    const priorityNotes = item.priorityNotes || '';
+    const isSetup = item.type === 'setup';
+
+    // For setup items, use different styling
+    const itemTypeClass = isSetup ? 'priority-item-setup' : 'priority-item-job';
+    const itemTypeIcon = isSetup ? 'fa-tools' : 'fa-briefcase';
+    const itemTypeBadgeColor = isSetup ? (item.toolReady === 'ready' ? '#10b981' : '#ef4444') : '';
 
     return `
-        <div class="priority-item"
-             data-job-id="${job.id}"
-             data-machine="${job.machine}"
+        <div class="priority-item ${itemTypeClass}"
+             data-job-id="${item.id}"
+             data-machine="${item.machine}"
              data-priority="${priority}"
-             draggable="true">
+             data-type="${item.type}"
+             draggable="true"
+             ${isSetup && itemTypeBadgeColor ? `style="border-left-color: ${itemTypeBadgeColor};"` : ''}>
             <div class="priority-drag-handle">
                 <i class="fas fa-grip-vertical"></i>
             </div>
             <div class="priority-job-info">
-                <div class="priority-machine-badge">
-                    <i class="fas fa-cog"></i>
-                    Machine ${job.machine}
+                <div class="priority-machine-badge" ${isSetup && itemTypeBadgeColor ? `style="background-color: ${itemTypeBadgeColor};"` : ''}>
+                    <i class="fas ${itemTypeIcon}"></i>
+                    Machine ${item.machine}
+                    ${isSetup ? ' - Setup' : ''}
                 </div>
-                <h3 class="priority-job-name">${job.jobName || 'Untitled Job'}</h3>
+                <h3 class="priority-job-name">${item.jobName || item.toolNumber || 'Untitled'}</h3>
                 <div class="priority-job-details">
-                    <div class="priority-detail-item">
-                        <i class="fas fa-file-alt"></i>
-                        <span>WO: <strong>${job.workOrder || 'N/A'}</strong></span>
-                    </div>
-                    <div class="priority-detail-item">
-                        <i class="fas fa-cubes"></i>
-                        <span><strong>${job.numParts || 0}</strong> parts</span>
-                    </div>
-                    <div class="priority-detail-item">
-                        <i class="fas fa-clock"></i>
-                        <span><strong>${(job.totalHours || 0).toFixed(1)}</strong> hrs</span>
-                    </div>
-                    <div class="priority-detail-item">
-                        <i class="fas fa-layer-group"></i>
-                        <span>${job.material || 'N/A'}</span>
-                    </div>
-                    ${job.dueDate ? `
-                    <div class="priority-detail-item">
-                        <i class="fas fa-calendar"></i>
-                        <span>Due: <strong>${formatDate(job.dueDate)}</strong></span>
-                    </div>
-                    ` : ''}
+                    ${isSetup ? `
+                        <div class="priority-detail-item">
+                            <i class="fas fa-wrench"></i>
+                            <span>Tool #: <strong>${item.toolNumber || 'N/A'}</strong></span>
+                        </div>
+                        <div class="priority-detail-item">
+                            <i class="fas ${item.toolReady === 'ready' ? 'fa-check-circle' : 'fa-times-circle'}"></i>
+                            <span>Mold: <strong>${item.toolReady === 'ready' ? 'Ready' : 'Not Ready'}</strong></span>
+                        </div>
+                        <div class="priority-detail-item">
+                            <i class="fas fa-clock"></i>
+                            <span><strong>${(item.setupHours || 0).toFixed(1)}</strong> hrs</span>
+                        </div>
+                        ${item.setupNotes ? `
+                        <div class="priority-detail-item">
+                            <i class="fas fa-comment"></i>
+                            <span>${item.setupNotes}</span>
+                        </div>
+                        ` : ''}
+                    ` : `
+                        <div class="priority-detail-item">
+                            <i class="fas fa-file-alt"></i>
+                            <span>WO: <strong>${item.workOrder || 'N/A'}</strong></span>
+                        </div>
+                        <div class="priority-detail-item">
+                            <i class="fas fa-cubes"></i>
+                            <span><strong>${item.numParts || 0}</strong> parts</span>
+                        </div>
+                        <div class="priority-detail-item">
+                            <i class="fas fa-clock"></i>
+                            <span><strong>${(item.totalHours || 0).toFixed(1)}</strong> hrs</span>
+                        </div>
+                        <div class="priority-detail-item">
+                            <i class="fas fa-layer-group"></i>
+                            <span>${item.material || 'N/A'}</span>
+                        </div>
+                        ${item.dueDate ? `
+                        <div class="priority-detail-item">
+                            <i class="fas fa-calendar"></i>
+                            <span>Due: <strong>${formatDate(item.dueDate)}</strong></span>
+                        </div>
+                        ` : ''}
+                    `}
                 </div>
             </div>
             <div class="priority-notes-section">
@@ -1302,8 +1332,8 @@ function createPriorityItem(job) {
                 </label>
                 <textarea
                     class="priority-notes-textarea"
-                    data-job-id="${job.id}"
-                    placeholder="Add notes for this priority job..."
+                    data-job-id="${item.id}"
+                    placeholder="Add notes for this priority ${isSetup ? 'setup' : 'job'}..."
                 >${priorityNotes}</textarea>
             </div>
         </div>
@@ -1467,14 +1497,14 @@ async function reorderPriorities(newOrder) {
         const updates = [];
 
         for (const [machine, items] of Object.entries(machineGroups)) {
-            // Get current jobs for this machine
-            const currentMachineJobs = state.jobs.filter(j => j.machine === machine && j.type === 'job');
+            // Get current items (jobs and setups) for this machine
+            const currentMachineItems = state.jobs.filter(j => j.machine === machine);
 
             items.forEach((item, idx) => {
-                const currentJob = state.jobs.find(j => j.id === item.jobId);
-                const currentPosition = currentMachineJobs.findIndex(j => j.id === item.jobId);
+                const currentItem = state.jobs.find(j => j.id === item.jobId);
+                const currentPosition = currentMachineItems.findIndex(j => j.id === item.jobId);
 
-                // If this job should be first (priority 0 in new order for this machine) but isn't first
+                // If this item should be first (priority 0 in new order for this machine) but isn't first
                 if (currentPosition !== 0) {
                     // We need to move it to first position
                     updates.push({
@@ -1489,7 +1519,7 @@ async function reorderPriorities(newOrder) {
         // Apply updates by reordering the state.jobs array
         const reorderedJobs = [];
 
-        // First, add jobs in the new priority order (only first jobs from each machine)
+        // First, add items in the new priority order (first items from each machine)
         newOrder.forEach(item => {
             const job = state.jobs.find(j => j.id === item.jobId);
             if (job && !reorderedJobs.find(j => j.id === job.id)) {
@@ -1497,7 +1527,7 @@ async function reorderPriorities(newOrder) {
             }
         });
 
-        // Then add all remaining jobs (non-first jobs from each machine)
+        // Then add all remaining items (non-first items from each machine)
         state.jobs.forEach(job => {
             if (!reorderedJobs.find(j => j.id === job.id)) {
                 reorderedJobs.push(job);
