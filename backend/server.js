@@ -39,21 +39,27 @@ app.use(helmet({
       },
 }));
 
-// CORS configuration - Allow all origins if ALLOWED_ORIGINS not set (for Heroku)
+// CORS configuration - BEFORE Basic Auth to allow OPTIONS preflight requests
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',');
 if (allowedOrigins) {
   console.log('🔒 CORS: Restricting to allowed origins:', allowedOrigins);
   app.use(cors({
     origin: allowedOrigins,
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
   }));
 } else {
   console.log('🌐 CORS: Allowing all origins (ALLOWED_ORIGINS not set)');
   app.use(cors({
     origin: true,  // Allow all origins when env var not set
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
   }));
 }
+
+// No authentication - direct access to application
 
 app.use(express.json());
 app.use(morgan('combined'));

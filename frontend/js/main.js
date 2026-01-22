@@ -444,12 +444,13 @@ async function handleJobSubmit(e) {
             await createJob(jobData);
             showToast('Job created successfully', 'success');
         }
-        closeModal(document.getElementById('jobModal'));
         await loadJobs();
         renderJobs();
     } catch (error) {
         console.error('Error saving job:', error);
         showToast('Failed to save job', 'error');
+    } finally {
+        closeModal(document.getElementById('jobModal'));
     }
 }
 
@@ -474,12 +475,13 @@ async function handleSetupSubmit(e) {
             await createJob(setupData);
             showToast('Setup/Maintenance created successfully', 'success');
         }
-        closeModal(document.getElementById('setupModal'));
         await loadJobs();
         renderJobs();
     } catch (error) {
         console.error('Error saving setup:', error);
         showToast('Failed to save setup/maintenance', 'error');
+    } finally {
+        closeModal(document.getElementById('setupModal'));
     }
 }
 
