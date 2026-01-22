@@ -4,7 +4,6 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
 const path = require('path');
-const basicAuth = require('express-basic-auth');
 require('dotenv').config();
 
 const jobsRouter = require('./routes/jobs');
@@ -60,48 +59,7 @@ if (allowedOrigins) {
   }));
 }
 
-// HTTP Basic Authentication (optional, enabled via environment variables)
-// Applied AFTER CORS to avoid blocking preflight requests
-if (process.env.BASIC_AUTH_USER && process.env.BASIC_AUTH_PASSWORD) {
-  console.log('🔒 HTTP Basic Authentication: ENABLED');
-  console.log('   Expected Username:', JSON.stringify(process.env.BASIC_AUTH_USER));
-  console.log('   Expected Password:', JSON.stringify(process.env.BASIC_AUTH_PASSWORD));
-  console.log('   Username length:', process.env.BASIC_AUTH_USER.length);
-  console.log('   Password length:', process.env.BASIC_AUTH_PASSWORD.length);
-
-  app.use((req, res, next) => {
-    const authHeader = req.headers.authorization;
-    if (authHeader) {
-      const base64Credentials = authHeader.split(' ')[1];
-      const credentials = Buffer.from(base64Credentials, 'base64').toString('utf-8');
-      const [username, password] = credentials.split(':');
-
-      console.log('📨 Auth Request:', {
-        path: req.path,
-        method: req.method,
-        receivedUsername: JSON.stringify(username),
-        receivedPassword: JSON.stringify(password),
-        usernameMatch: username === process.env.BASIC_AUTH_USER,
-        passwordMatch: password === process.env.BASIC_AUTH_PASSWORD
-      });
-
-      if (username === process.env.BASIC_AUTH_USER && password === process.env.BASIC_AUTH_PASSWORD) {
-        console.log('✅ Authentication SUCCESS for user:', username);
-        return next();
-      } else {
-        console.log('❌ Authentication FAILED - Credentials do not match');
-        res.set('WWW-Authenticate', 'Basic realm="Manufacturing Schedule Application"');
-        return res.status(401).send('Unauthorized - Invalid credentials');
-      }
-    } else {
-      console.log('🔑 No credentials provided, requesting authentication');
-      res.set('WWW-Authenticate', 'Basic realm="Manufacturing Schedule Application"');
-      return res.status(401).send('Unauthorized - Authentication required');
-    }
-  });
-} else {
-  console.log('🔓 HTTP Basic Authentication: DISABLED (no credentials configured)');
-}
+// No authentication - direct access to application
 
 app.use(express.json());
 app.use(morgan('combined'));
