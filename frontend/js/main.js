@@ -121,6 +121,26 @@ function createMachineColumns() {
         const jobsContainer = column.querySelector('.jobs-container');
         setupDragAndDrop(jobsContainer);
     });
+
+    // Add Material Usage column
+    const materialColumn = document.createElement('div');
+    materialColumn.className = 'machine-column material-usage-column';
+    materialColumn.id = 'materialUsageColumn';
+    materialColumn.innerHTML = `
+        <div class="machine-header">
+            <div class="machine-name">
+                <i class="fas fa-box"></i>
+                Material Usage
+            </div>
+        </div>
+        <div class="material-usage-container">
+            <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <p>No materials to display</p>
+            </div>
+        </div>
+    `;
+    scheduleBoard.appendChild(materialColumn);
 }
 
 // Get Machine Priority
@@ -271,6 +291,9 @@ function renderJobs() {
             });
         }
     });
+
+    // Render material usage box
+    renderMaterialUsage(jobsByMachine);
 }
 
 // Create Job Card
@@ -683,4 +706,189 @@ function showToast(message, type = 'success') {
         toast.style.animation = 'slideOutRight 0.3s ease';
         setTimeout(() => toast.remove(), 300);
     }, 3000);
+}
+
+// Calculate Material Usage by Timeframe
+function calculateMaterialUsage(jobsByMachine) {
+    const materialUsage = {
+        timeframe1: {}, // 0-168 hrs
+        timeframe2: {}, // 168-336 hrs
+        timeframe3: {}  // 336-504 hrs
+    };
+
+    // Process each machine
+    Object.keys(jobsByMachine).forEach(machine => {
+        let cumulativeHours = 0;
+
+        jobsByMachine[machine].forEach(job => {
+            // Skip setup jobs (no material)
+            if (job.type === 'setup' || !job.material || !job.totalMaterial) {
+                const totalHours = job.type === 'setup' ? (job.setupHours || 0) : (job.totalHours || 0);
+                const percentComplete = job.percentComplete || 0;
+                const remainingHours = totalHours * (1 - percentComplete / 100);
+                cumulativeHours += remainingHours;
+                return;
+            }
+
+            const material = job.material;
+            const totalHours = job.totalHours || 0;
+            const percentComplete = job.percentComplete || 0;
+            const remainingHours = totalHours * (1 - percentComplete / 100);
+            const remainingMaterial = (job.totalMaterial || 0) * (1 - percentComplete / 100);
+
+            const jobStartTime = cumulativeHours;
+            const jobEndTime = cumulativeHours + remainingHours;
+
+            // Split material across timeframes
+            // Timeframe 1: 0-168 hrs
+            if (jobStartTime < 168) {
+                const timeInFrame = Math.min(jobEndTime, 168) - jobStartTime;
+                const percentage = timeInFrame / remainingHours;
+                const materialInFrame = remainingMaterial * percentage;
+
+                if (!materialUsage.timeframe1[material]) {
+                    materialUsage.timeframe1[material] = 0;
+                }
+                materialUsage.timeframe1[material] += materialInFrame;
+            }
+
+            // Timeframe 2: 168-336 hrs
+            if (jobEndTime > 168 && jobStartTime < 336) {
+                const frameStart = Math.max(jobStartTime, 168);
+                const frameEnd = Math.min(jobEndTime, 336);
+                const timeInFrame = frameEnd - frameStart;
+                const percentage = timeInFrame / remainingHours;
+                const materialInFrame = remainingMaterial * percentage;
+
+                if (!materialUsage.timeframe2[material]) {
+                    materialUsage.timeframe2[material] = 0;
+                }
+                materialUsage.timeframe2[material] += materialInFrame;
+            }
+
+            // Timeframe 3: 336-504 hrs
+            if (jobEndTime > 336 && jobStartTime < 504) {
+                const frameStart = Math.max(jobStartTime, 336);
+                const frameEnd = Math.min(jobEndTime, 504);
+                const timeInFrame = frameEnd - frameStart;
+                const percentage = timeInFrame / remainingHours;
+                const materialInFrame = remainingMaterial * percentage;
+
+                if (!materialUsage.timeframe3[material]) {
+                    materialUsage.timeframe3[material] = 0;
+                }
+                materialUsage.timeframe3[material] += materialInFrame;
+            }
+
+            cumulativeHours += remainingHours;
+        });
+    });
+
+    return materialUsage;
+}
+
+// Render Material Usage Box
+function renderMaterialUsage(jobsByMachine) {
+    const container = document.querySelector('.material-usage-container');
+    if (!container) return;
+
+    const materialUsage = calculateMaterialUsage(jobsByMachine);
+
+    // Check if there's any material to display
+    const hasData = Object.keys(materialUsage.timeframe1).length > 0 ||
+                    Object.keys(materialUsage.timeframe2).length > 0 ||
+                    Object.keys(materialUsage.timeframe3).length > 0;
+
+    if (!hasData) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <p>No materials to display</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Build HTML for each timeframe
+    let html = '';
+
+    // Timeframe 1: 0-168 hrs
+    if (Object.keys(materialUsage.timeframe1).length > 0) {
+        html += `
+            <div class="material-timeframe">
+                <div class="timeframe-header">
+                    <i class="fas fa-clock"></i>
+                    0-168 Hours (1 Week)
+                </div>
+                <div class="material-list">
+        `;
+        Object.entries(materialUsage.timeframe1)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .forEach(([material, amount]) => {
+                html += `
+                    <div class="material-item">
+                        <span class="material-name">${material}</span>
+                        <span class="material-amount">${amount.toFixed(2)} lbs</span>
+                    </div>
+                `;
+            });
+        html += `
+                </div>
+            </div>
+        `;
+    }
+
+    // Timeframe 2: 168-336 hrs
+    if (Object.keys(materialUsage.timeframe2).length > 0) {
+        html += `
+            <div class="material-timeframe">
+                <div class="timeframe-header">
+                    <i class="fas fa-clock"></i>
+                    168-336 Hours (2 Weeks)
+                </div>
+                <div class="material-list">
+        `;
+        Object.entries(materialUsage.timeframe2)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .forEach(([material, amount]) => {
+                html += `
+                    <div class="material-item">
+                        <span class="material-name">${material}</span>
+                        <span class="material-amount">${amount.toFixed(2)} lbs</span>
+                    </div>
+                `;
+            });
+        html += `
+                </div>
+            </div>
+        `;
+    }
+
+    // Timeframe 3: 336-504 hrs
+    if (Object.keys(materialUsage.timeframe3).length > 0) {
+        html += `
+            <div class="material-timeframe">
+                <div class="timeframe-header">
+                    <i class="fas fa-clock"></i>
+                    336-504 Hours (3 Weeks)
+                </div>
+                <div class="material-list">
+        `;
+        Object.entries(materialUsage.timeframe3)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .forEach(([material, amount]) => {
+                html += `
+                    <div class="material-item">
+                        <span class="material-name">${material}</span>
+                        <span class="material-amount">${amount.toFixed(2)} lbs</span>
+                    </div>
+                `;
+            });
+        html += `
+                </div>
+            </div>
+        `;
+    }
+
+    container.innerHTML = html;
 }
