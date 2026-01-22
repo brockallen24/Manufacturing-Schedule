@@ -39,7 +39,7 @@ app.use(helmet({
       },
 }));
 
-// CORS configuration - BEFORE Basic Auth to allow OPTIONS preflight requests
+// CORS configuration
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',');
 if (allowedOrigins) {
   console.log('🔒 CORS: Restricting to allowed origins:', allowedOrigins);
@@ -47,7 +47,7 @@ if (allowedOrigins) {
     origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type']
   }));
 } else {
   console.log('🌐 CORS: Allowing all origins (ALLOWED_ORIGINS not set)');
@@ -55,11 +55,9 @@ if (allowedOrigins) {
     origin: true,  // Allow all origins when env var not set
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type']
   }));
 }
-
-// No authentication - direct access to application
 
 app.use(express.json());
 app.use(morgan('combined'));

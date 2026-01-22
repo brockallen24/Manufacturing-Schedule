@@ -236,23 +236,45 @@ function renderJobs() {
         `;
     });
 
-    // Render jobs into their assigned machines
+    // Group jobs by machine for cumulative hours calculation
+    const jobsByMachine = {};
     state.jobs.forEach(job => {
-        const container = document.querySelector(`.jobs-container[data-machine="${job.machine}"]`);
+        if (!jobsByMachine[job.machine]) {
+            jobsByMachine[job.machine] = [];
+        }
+        jobsByMachine[job.machine].push(job);
+    });
+
+    // Render jobs into their assigned machines with cumulative hours
+    Object.keys(jobsByMachine).forEach(machine => {
+        const container = document.querySelector(`.jobs-container[data-machine="${machine}"]`);
         if (container) {
             // Remove empty state if it exists
             const emptyState = container.querySelector('.empty-state');
             if (emptyState) emptyState.remove();
 
-            // Create job card
-            const jobCard = createJobCard(job);
-            container.appendChild(jobCard);
+            let cumulativeHours = 0;
+
+            // Render each job with cumulative hours
+            jobsByMachine[machine].forEach(job => {
+                // Calculate remaining hours for this job
+                const totalHours = job.type === 'setup' ? (job.setupHours || 0) : (job.totalHours || 0);
+                const percentComplete = job.percentComplete || 0;
+                const remainingHours = totalHours * (1 - percentComplete / 100);
+
+                // Add to cumulative total
+                cumulativeHours += remainingHours;
+
+                // Create job card with cumulative hours
+                const jobCard = createJobCard(job, cumulativeHours);
+                container.appendChild(jobCard);
+            });
         }
     });
 }
 
 // Create Job Card
-function createJobCard(job) {
+function createJobCard(job, cumulativeHours = 0) {
     const card = document.createElement('div');
 
     // Add conditional class based on toolReady status for setup cards
@@ -302,6 +324,10 @@ function createJobCard(job) {
             <div class="progress-bar">
                 <div class="progress-fill" style="width: ${job.percentComplete || 0}%"></div>
             </div>
+            <div class="cumulative-hours">
+                <i class="fas fa-calculator"></i>
+                <span>Cumulative: ${cumulativeHours.toFixed(2)} hrs</span>
+            </div>
         `;
     } else {
         card.innerHTML = `
@@ -340,6 +366,10 @@ function createJobCard(job) {
             </div>
             <div class="progress-bar">
                 <div class="progress-fill" style="width: ${job.percentComplete || 0}%"></div>
+            </div>
+            <div class="cumulative-hours">
+                <i class="fas fa-calculator"></i>
+                <span>Cumulative: ${cumulativeHours.toFixed(2)} hrs</span>
             </div>
         `;
     }
