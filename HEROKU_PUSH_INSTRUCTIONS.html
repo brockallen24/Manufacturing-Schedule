@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Push to Heroku - Web Instructions</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            line-height: 1.6;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #6762a6;
+            border-bottom: 3px solid #6762a6;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #1e293b;
+            margin-top: 30px;
+            background: #f1f5f9;
+            padding: 10px 15px;
+            border-left: 4px solid #6762a6;
+        }
+        .critical {
+            background: #fee2e2;
+            border-left: 4px solid #dc2626;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .step {
+            background: #f8fafc;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #2563eb;
+            border-radius: 4px;
+        }
+        .step-number {
+            display: inline-block;
+            background: #6762a6;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 35px;
+            font-weight: bold;
+            margin-right: 10px;
+            font-size: 18px;
+        }
+        .option {
+            background: #dbeafe;
+            border-left: 4px solid #3b82f6;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background: #d1fae5;
+            border-left-color: #10b981;
+            border-left: 4px solid #10b981;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .warning {
+            background: #fef3c7;
+            border-left-color: #f59e0b;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        code {
+            background: #1e293b;
+            color: #10b981;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            display: block;
+            margin: 10px 0;
+            padding: 15px;
+            overflow-x: auto;
+        }
+        .inline-code {
+            display: inline;
+            padding: 2px 6px;
+            margin: 0 2px;
+        }
+        ul {
+            margin: 10px 0;
+            padding-left: 25px;
+        }
+        li {
+            margin: 8px 0;
+        }
+        a {
+            color: #6762a6;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .button-link {
+            display: inline-block;
+            background: #6762a6;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            margin: 10px 10px 10px 0;
+            transition: background 0.2s;
+        }
+        .button-link:hover {
+            background: #524ba0;
+            text-decoration: none;
+        }
+        .screenshot-box {
+            background: #f9fafb;
+            border: 2px dashed #9ca3af;
+            padding: 20px;
+            text-align: center;
+            margin: 15px 0;
+            border-radius: 8px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        th {
+            background: #f9fafb;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Deploy to Heroku - No Terminal Required</h1>
+
+        <div class="critical">
+            <strong>⚠️ CRITICAL PROBLEM:</strong>
+            <p>Your code changes are on <strong>your local computer only</strong>. They must be pushed to GitHub first before Heroku can deploy them.</p>
+            <p><strong>Unfortunately, you CANNOT push git commits without using a command line or git client.</strong></p>
+        </div>
+
+        <h2>📊 Current Situation</h2>
+        <table>
+            <tr>
+                <th>Location</th>
+                <th>Has New Features?</th>
+                <th>Has Login Screen?</th>
+            </tr>
+            <tr>
+                <td><strong>Your Computer (Local)</strong></td>
+                <td>✅ Yes (all 4 commits)</td>
+                <td>❌ No (removed)</td>
+            </tr>
+            <tr>
+                <td><strong>GitHub</strong></td>
+                <td>❌ No (old code)</td>
+                <td>✅ Yes (still has it)</td>
+            </tr>
+            <tr>
+                <td><strong>Heroku Website</strong></td>
+                <td>❌ No (old code)</td>
+                <td>✅ Yes (still has it)</td>
+            </tr>
+        </table>
+
+        <h2>🎯 Your Options</h2>
+
+        <div class="option">
+            <h3>Option 1: Minimal Terminal Command (EASIEST - 1 Minute)</h3>
+            <p>This is the fastest and simplest option. You only need to run ONE command.</p>
+
+            <div class="step">
+                <span class="step-number">1</span>
+                <strong>Open Terminal/Command Prompt</strong>
+                <ul>
+                    <li><strong>Windows:</strong> Press <code class="inline-code">Win + R</code>, type <code class="inline-code">cmd</code>, press Enter</li>
+                    <li><strong>Mac:</strong> Press <code class="inline-code">Cmd + Space</code>, type <code class="inline-code">terminal</code>, press Enter</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <span class="step-number">2</span>
+                <strong>Navigate to Your Project</strong>
+                <code>cd /home/user/Manufacturing-Schedule</code>
+                <p><em>Or wherever your project is located</em></p>
+            </div>
+
+            <div class="step">
+                <span class="step-number">3</span>
+                <strong>Run This ONE Command</strong>
+                <code>git push origin main</code>
+                <p>That's it! Your 4 commits will be pushed to GitHub.</p>
+            </div>
+
+            <div class="step">
+                <span class="step-number">4</span>
+                <strong>Heroku Will Auto-Deploy</strong>
+                <p>If auto-deploy is enabled, Heroku will automatically deploy within 1-2 minutes.</p>
+                <p>Watch deployment at:</p>
+                <a href="https://dashboard.heroku.com/apps" target="_blank" class="button-link">Open Heroku Dashboard →</a>
+            </div>
+        </div>
+
+        <div class="option">
+            <h3>Option 2: Use GitHub Desktop App (NO TERMINAL)</h3>
+            <p>If you absolutely cannot use terminal, use GitHub Desktop app:</p>
+
+            <div class="step">
+                <span class="step-number">1</span>
+                <strong>Download GitHub Desktop</strong>
+                <p>Download and install from:</p>
+                <a href="https://desktop.github.com/" target="_blank" class="button-link">Download GitHub Desktop →</a>
+            </div>
+
+            <div class="step">
+                <span class="step-number">2</span>
+                <strong>Open Your Repository</strong>
+                <ul>
+                    <li>Open GitHub Desktop</li>
+                    <li>Click <strong>File → Add Local Repository</strong></li>
+                    <li>Browse to: <code class="inline-code">/home/user/Manufacturing-Schedule</code></li>
+                    <li>Click <strong>Add Repository</strong></li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <span class="step-number">3</span>
+                <strong>Push to GitHub</strong>
+                <ul>
+                    <li>You'll see "4 commits" to push at the top</li>
+                    <li>Click <strong>Push origin</strong> button</li>
+                    <li>Wait for it to complete (green checkmark)</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <span class="step-number">4</span>
+                <strong>Heroku Will Auto-Deploy</strong>
+                <p>Monitor deployment at:</p>
+                <a href="https://dashboard.heroku.com/apps" target="_blank" class="button-link">Open Heroku Dashboard →</a>
+            </div>
+        </div>
+
+        <h2>📱 After Pushing to GitHub - Heroku Deployment</h2>
+
+        <div class="step">
+            <span class="step-number">1</span>
+            <strong>Go to Heroku Dashboard</strong>
+            <a href="https://dashboard.heroku.com/apps" target="_blank" class="button-link">Open Heroku Dashboard →</a>
+        </div>
+
+        <div class="step">
+            <span class="step-number">2</span>
+            <strong>Click Your Manufacturing Schedule App</strong>
+            <p>Find your app in the list and click on it</p>
+        </div>
+
+        <div class="step">
+            <span class="step-number">3</span>
+            <strong>Check Deployment Status</strong>
+            <p><strong>Option A: If Auto-Deploy is Enabled</strong></p>
+            <ul>
+                <li>Click the <strong>"Activity"</strong> tab</li>
+                <li>You should see "Building" or "Build succeeded"</li>
+                <li>Wait for "Build succeeded" message (1-2 minutes)</li>
+            </ul>
+
+            <p><strong>Option B: If Auto-Deploy is NOT Enabled</strong></p>
+            <ul>
+                <li>Click the <strong>"Deploy"</strong> tab</li>
+                <li>Scroll to <strong>"Manual deploy"</strong> section</li>
+                <li>Select branch: <code class="inline-code">main</code></li>
+                <li>Click <strong>"Deploy Branch"</strong> button</li>
+                <li>Wait for "Your app was successfully deployed" message</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <span class="step-number">4</span>
+            <strong>View Your Updated App</strong>
+            <p>Click <strong>"Open app"</strong> button at top right of Heroku dashboard</p>
+            <p>Or go directly to your app URL (usually <code class="inline-code">https://your-app-name.herokuapp.com</code>)</p>
+        </div>
+
+        <div class="step">
+            <span class="step-number">5</span>
+            <strong>Hard Refresh Your Browser</strong>
+            <p>To clear cache and see the new version:</p>
+            <ul>
+                <li><strong>Windows/Linux:</strong> <code class="inline-code">Ctrl + Shift + R</code></li>
+                <li><strong>Mac:</strong> <code class="inline-code">Cmd + Shift + R</code></li>
+            </ul>
+        </div>
+
+        <div class="success">
+            <h3>✅ Success Indicators - What You Should See:</h3>
+            <ul>
+                <li>✅ <strong>NO login screen</strong> when accessing the app</li>
+                <li>✅ Each job card shows <strong>"Cumulative: X.XX hrs"</strong> at the bottom</li>
+                <li>✅ A new <strong>"Material Usage"</strong> column appears after all machines</li>
+                <li>✅ Material Usage shows 3 colored timeframes (blue, orange, red)</li>
+            </ul>
+        </div>
+
+        <h2>🔧 Enable Auto-Deploy (Optional - Future Convenience)</h2>
+
+        <div class="step">
+            <p>To automatically deploy when you push to GitHub in the future:</p>
+            <ol>
+                <li>Go to <a href="https://dashboard.heroku.com/apps" target="_blank">Heroku Dashboard</a></li>
+                <li>Click your app</li>
+                <li>Click <strong>"Deploy"</strong> tab</li>
+                <li>Under "Deployment method", ensure <strong>"GitHub"</strong> is selected</li>
+                <li>Under "Automatic deploys", click <strong>"Enable Automatic Deploys"</strong></li>
+                <li>Select branch: <code class="inline-code">main</code></li>
+            </ol>
+            <p>Now future pushes to GitHub will automatically deploy to Heroku!</p>
+        </div>
+
+        <h2>❌ What WON'T Work</h2>
+
+        <div class="warning">
+            <strong>These will NOT solve your problem:</strong>
+            <ul>
+                <li>❌ Editing files on GitHub.com website (your changes are local)</li>
+                <li>❌ Clicking buttons in Heroku dashboard (without pushing first)</li>
+                <li>❌ Hard refreshing your browser (old code is still deployed)</li>
+                <li>❌ Reverting git commits (auth already removed, creates conflicts)</li>
+            </ul>
+            <p><strong>The ONLY solution:</strong> Push your local commits to GitHub using Option 1 or Option 2 above.</p>
+        </div>
+
+        <h2>🆘 Troubleshooting</h2>
+
+        <div class="warning">
+            <strong>Problem: "Authentication failed" when pushing</strong>
+            <p><strong>Solution:</strong></p>
+            <ul>
+                <li>GitHub requires a Personal Access Token (not your password)</li>
+                <li>Create one at: <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a></li>
+                <li>Click <strong>"Generate new token (classic)"</strong></li>
+                <li>Give it a name: "Manufacturing Schedule"</li>
+                <li>Check: <code class="inline-code">repo</code> (full control of private repositories)</li>
+                <li>Click <strong>"Generate token"</strong></li>
+                <li>Copy the token and use it as your password when pushing</li>
+            </ul>
+        </div>
+
+        <div class="warning">
+            <strong>Problem: Heroku not deploying after push</strong>
+            <p><strong>Solution:</strong></p>
+            <ul>
+                <li>Check if auto-deploy is enabled (see section above)</li>
+                <li>If not, manually deploy from Heroku Dashboard → Deploy tab</li>
+                <li>Check Activity tab for error messages</li>
+            </ul>
+        </div>
+
+        <div class="warning">
+            <strong>Problem: Still see login screen after deployment</strong>
+            <p><strong>Solution:</strong></p>
+            <ul>
+                <li>Hard refresh browser: <code class="inline-code">Ctrl + Shift + R</code> or <code class="inline-code">Cmd + Shift + R</code></li>
+                <li>Clear browser cache completely</li>
+                <li>Try in Incognito/Private window</li>
+                <li>Check Heroku Activity tab - was build successful?</li>
+                <li>Check you deployed the <code class="inline-code">main</code> branch</li>
+            </ul>
+        </div>
+
+        <h2>📋 Quick Reference Links</h2>
+
+        <a href="https://dashboard.heroku.com/apps" target="_blank" class="button-link">Heroku Dashboard</a>
+        <a href="https://github.com/brockallen24/Manufacturing-Schedule" target="_blank" class="button-link">GitHub Repository</a>
+        <a href="https://desktop.github.com/" target="_blank" class="button-link">GitHub Desktop</a>
+        <a href="https://github.com/settings/tokens" target="_blank" class="button-link">GitHub Tokens</a>
+
+        <hr style="margin: 40px 0; border: none; border-top: 2px solid #e2e8f0;">
+
+        <div class="success">
+            <h3>🎯 Bottom Line - What You Need to Do:</h3>
+            <p style="font-size: 18px;"><strong>1.</strong> Push your commits to GitHub using <strong>Option 1</strong> (terminal - 1 command) or <strong>Option 2</strong> (GitHub Desktop app)</p>
+            <p style="font-size: 18px;"><strong>2.</strong> Wait for Heroku to auto-deploy OR manually deploy from Heroku dashboard</p>
+            <p style="font-size: 18px;"><strong>3.</strong> Hard refresh your browser</p>
+            <p style="font-size: 18px;"><strong>4.</strong> Enjoy your login-free app with cumulative hours and material usage! 🎉</p>
+        </div>
+
+        <p style="text-align: center; color: #64748b; font-size: 14px; margin-top: 40px;">
+            <strong>Questions?</strong> Follow Option 1 - it's the fastest and easiest way.
+        </p>
+    </div>
+</body>
+</html>
