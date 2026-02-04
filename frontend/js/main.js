@@ -189,47 +189,159 @@ function setupDragAndDrop(container) {
     container.addEventListener('dragover', handleDragOver);
     container.addEventListener('drop', handleDrop);
     container.addEventListener('dragleave', handleDragLeave);
+    container.addEventListener('dragenter', handleDragEnter);
 }
 
+let draggedElement = null;
+let draggedJobId = null;
+
 function handleDragStart(e) {
+    draggedElement = e.target;
+    draggedJobId = e.target.getAttribute('data-job-id');
+
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/html', e.target.innerHTML);
-    e.target.classList.add('dragging');
+    e.dataTransfer.setData('jobId', draggedJobId);
 
-    const jobId = e.target.getAttribute('data-job-id');
-    e.dataTransfer.setData('jobId', jobId);
+    // Add dragging class after a tiny delay so transform applies
+    setTimeout(() => {
+        e.target.classList.add('dragging');
+    }, 0);
 }
 
 function handleDragEnd(e) {
     e.target.classList.remove('dragging');
+    draggedElement = null;
+    draggedJobId = null;
+
+    // Remove all drop indicators
+    document.querySelectorAll('.drop-indicator').forEach(el => el.remove());
+    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+}
+
+function handleDragEnter(e) {
+    e.preventDefault();
 }
 
 function handleDragOver(e) {
-    if (e.preventDefault) {
-        e.preventDefault();
-    }
+    e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    e.currentTarget.classList.add('drag-over');
+
+    const container = e.currentTarget;
+    const afterElement = getDragAfterElement(container, e.clientY);
+    const draggable = draggedElement;
+
+    if (!draggable) return;
+
+    // Remove existing drop indicator
+    const existingIndicator = container.querySelector('.drop-indicator');
+    if (existingIndicator) {
+        existingIndicator.remove();
+    }
+
+    // Add drop indicator
+    const indicator = document.createElement('div');
+    indicator.className = 'drop-indicator';
+
+    if (afterElement == null) {
+        container.appendChild(indicator);
+    } else {
+        container.insertBefore(indicator, afterElement);
+    }
+
+    container.classList.add('drag-over');
     return false;
 }
 
 function handleDragLeave(e) {
+    // Only remove if leaving the container itself, not child elements
+    if (e.currentTarget.contains(e.relatedTarget)) {
+        return;
+    }
+
     e.currentTarget.classList.remove('drag-over');
+    const indicator = e.currentTarget.querySelector('.drop-indicator');
+    if (indicator) {
+        indicator.remove();
+    }
 }
 
-function handleDrop(e) {
-    if (e.stopPropagation) {
-        e.stopPropagation();
-    }
+function getDragAfterElement(container, y) {
+    const draggableElements = [...container.querySelectorAll('.job-card:not(.dragging)')];
+
+    return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+
+        if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+        } else {
+            return closest;
+        }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+async function handleDrop(e) {
+    e.stopPropagation();
     e.preventDefault();
 
     const jobId = e.dataTransfer.getData('jobId');
-    const targetMachine = e.currentTarget.getAttribute('data-machine');
+    const targetContainer = e.currentTarget;
+    const targetMachine = targetContainer.getAttribute('data-machine');
+    const afterElement = getDragAfterElement(targetContainer, e.clientY);
 
-    // Update job machine assignment
-    updateJobMachine(jobId, targetMachine);
+    // Remove drop indicator
+    const indicator = targetContainer.querySelector('.drop-indicator');
+    if (indicator) {
+        indicator.remove();
+    }
 
-    e.currentTarget.classList.remove('drag-over');
+    targetContainer.classList.remove('drag-over');
+
+    // Find the job and update its machine
+    const job = state.jobs.find(j => j.id === jobId);
+    if (!job) return false;
+
+    const oldMachine = job.machine;
+    job.machine = targetMachine;
+
+    // Calculate new position in array
+    const jobsInTargetMachine = state.jobs.filter(j => j.machine === targetMachine && j.id !== jobId);
+
+    if (afterElement) {
+        const afterJobId = afterElement.getAttribute('data-job-id');
+        const afterIndex = state.jobs.findIndex(j => j.id === afterJobId);
+
+        // Remove job from current position
+        const jobIndex = state.jobs.findIndex(j => j.id === jobId);
+        state.jobs.splice(jobIndex, 1);
+
+        // Insert at new position
+        const newAfterIndex = state.jobs.findIndex(j => j.id === afterJobId);
+        state.jobs.splice(newAfterIndex, 0, job);
+    } else {
+        // Drop at end
+        const jobIndex = state.jobs.findIndex(j => j.id === jobId);
+        state.jobs.splice(jobIndex, 1);
+        state.jobs.push(job);
+    }
+
+    // Update on server
+    try {
+        await updateJob(jobId, { machine: targetMachine });
+        renderJobs();
+        if (oldMachine !== targetMachine) {
+            showToast(`Moved to ${targetMachine}`, 'success');
+        }
+    } catch (error) {
+        console.error('Error updating job machine:', error);
+        showToast('Failed to move job', 'error');
+        // Revert changes
+        job.machine = oldMachine;
+        await loadJobs();
+        renderJobs();
+    }
+
     return false;
 }
 
