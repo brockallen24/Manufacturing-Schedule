@@ -199,6 +199,13 @@ function handleDragStart(e) {
     draggedElement = e.target;
     draggedJobId = e.target.getAttribute('data-job-id');
 
+    console.log('Drag start:', { jobId: draggedJobId, element: e.target });
+
+    if (!draggedJobId) {
+        console.error('No job ID found on dragged element!', e.target);
+        return;
+    }
+
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/html', e.target.innerHTML);
     e.dataTransfer.setData('jobId', draggedJobId);
@@ -308,7 +315,7 @@ async function handleDrop(e) {
     const oldMachine = job.machine;
     const isCrossMachine = oldMachine !== targetMachine;
 
-    console.log(`Drop: jobId=${jobId}, from=${oldMachine}, to=${targetMachine}, cross=${isCrossMachine}`);
+    console.log(`Drop: jobId=${jobId}, type=${job.type}, from=${oldMachine}, to=${targetMachine}, cross=${isCrossMachine}`);
 
     // Update job's machine
     job.machine = targetMachine;
@@ -329,11 +336,16 @@ async function handleDrop(e) {
     if (isCrossMachine) {
         try {
             console.log('Updating server with new machine:', targetMachine);
-            await updateJob(jobId, { machine: targetMachine });
+            console.log('Job data:', { id: job.id, type: job.type, machine: targetMachine });
+
+            const result = await updateJob(jobId, { machine: targetMachine });
+            console.log('Update result:', result);
+
             showToast(`Moved to ${targetMachine}`, 'success');
         } catch (error) {
             console.error('Error updating job machine:', error);
-            showToast('Failed to move job', 'error');
+            console.error('Error details:', error.message, error.stack);
+            showToast(`Failed to move job: ${error.message}`, 'error');
 
             // Revert changes
             job.machine = oldMachine;
@@ -897,13 +909,23 @@ async function createJob(jobData) {
 }
 
 async function updateJob(jobId, jobData) {
+    console.log(`updateJob called: jobId=${jobId}`, jobData);
+
     const response = await fetch(`${API_BASE_URL}/jobs/${jobId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(jobData)
     });
-    if (!response.ok) throw new Error('Failed to update job');
-    return await response.json();
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Update failed:', response.status, errorText);
+        throw new Error(`Failed to update job: ${response.status} ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.log('Update successful:', result);
+    return result;
 }
 
 async function updateJobMachine(jobId, machine) {
