@@ -298,49 +298,53 @@ async function handleDrop(e) {
 
     targetContainer.classList.remove('drag-over');
 
-    // Find the job and update its machine
+    // Find the job
     const job = state.jobs.find(j => j.id === jobId);
-    if (!job) return false;
+    if (!job) {
+        console.error('Job not found:', jobId);
+        return false;
+    }
 
     const oldMachine = job.machine;
+    const isCrossMachine = oldMachine !== targetMachine;
+
+    console.log(`Drop: jobId=${jobId}, from=${oldMachine}, to=${targetMachine}, cross=${isCrossMachine}`);
+
+    // Update job's machine
     job.machine = targetMachine;
 
-    // Calculate new position in array
-    const jobsInTargetMachine = state.jobs.filter(j => j.machine === targetMachine && j.id !== jobId);
+    // Handle reordering within the array
+    const jobIndex = state.jobs.findIndex(j => j.id === jobId);
+    state.jobs.splice(jobIndex, 1);
 
     if (afterElement) {
         const afterJobId = afterElement.getAttribute('data-job-id');
-        const afterIndex = state.jobs.findIndex(j => j.id === afterJobId);
-
-        // Remove job from current position
-        const jobIndex = state.jobs.findIndex(j => j.id === jobId);
-        state.jobs.splice(jobIndex, 1);
-
-        // Insert at new position
         const newAfterIndex = state.jobs.findIndex(j => j.id === afterJobId);
         state.jobs.splice(newAfterIndex, 0, job);
     } else {
-        // Drop at end
-        const jobIndex = state.jobs.findIndex(j => j.id === jobId);
-        state.jobs.splice(jobIndex, 1);
         state.jobs.push(job);
     }
 
-    // Update on server
-    try {
-        await updateJob(jobId, { machine: targetMachine });
-        renderJobs();
-        if (oldMachine !== targetMachine) {
+    // Update on server if machine changed
+    if (isCrossMachine) {
+        try {
+            console.log('Updating server with new machine:', targetMachine);
+            await updateJob(jobId, { machine: targetMachine });
             showToast(`Moved to ${targetMachine}`, 'success');
+        } catch (error) {
+            console.error('Error updating job machine:', error);
+            showToast('Failed to move job', 'error');
+
+            // Revert changes
+            job.machine = oldMachine;
+            await loadJobs();
+            renderJobs();
+            return false;
         }
-    } catch (error) {
-        console.error('Error updating job machine:', error);
-        showToast('Failed to move job', 'error');
-        // Revert changes
-        job.machine = oldMachine;
-        await loadJobs();
-        renderJobs();
     }
+
+    // Re-render jobs
+    renderJobs();
 
     return false;
 }
