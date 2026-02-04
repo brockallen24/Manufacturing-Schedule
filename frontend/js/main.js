@@ -134,7 +134,9 @@ function createMachineColumns() {
 // Get Machine Priority
 function getMachinePriority(machine) {
     const priority = state.machinePriorities.find(p => p.machine === machine);
-    return priority ? priority.priority : 'Low';
+    // Backend stores lowercase, return capitalized for UI display
+    const priorityValue = priority ? priority.priority : 'low';
+    return priorityValue.charAt(0).toUpperCase() + priorityValue.slice(1);
 }
 
 // Toggle Machine Priority
@@ -146,18 +148,18 @@ async function togglePriority(machine) {
     const newPriority = priorityLevels[nextIndex];
 
     try {
-        // Update on server
-        await updateMachinePriority(machine, newPriority);
+        // Update on server (send lowercase to match backend validation)
+        await updateMachinePriority(machine, newPriority.toLowerCase());
 
-        // Update local state
+        // Update local state (store lowercase to match backend)
         const priorityObj = state.machinePriorities.find(p => p.machine === machine);
         if (priorityObj) {
-            priorityObj.priority = newPriority;
+            priorityObj.priority = newPriority.toLowerCase();
         } else {
-            state.machinePriorities.push({ machine, priority: newPriority });
+            state.machinePriorities.push({ machine, priority: newPriority.toLowerCase() });
         }
 
-        // Update UI
+        // Update UI (display capitalized)
         const button = document.querySelector(`.machine-priority[data-machine="${machine}"]`);
         if (button) {
             button.textContent = newPriority;
