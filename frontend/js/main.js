@@ -378,15 +378,13 @@ function calculateCumulativeHours(jobsInMachine, currentIndex) {
 function calculateMaterialSummary() {
     const materialSummary = {};
 
-    // Group jobs by machine to get proper cumulative hours
+    // Group ALL jobs by machine (including setup/maintenance for cumulative hours)
     const jobsByMachine = {};
     state.jobs.forEach(job => {
-        if (job.type === 'job') { // Only process regular jobs, not setup/maintenance
-            if (!jobsByMachine[job.machine]) {
-                jobsByMachine[job.machine] = [];
-            }
-            jobsByMachine[job.machine].push(job);
+        if (!jobsByMachine[job.machine]) {
+            jobsByMachine[job.machine] = [];
         }
+        jobsByMachine[job.machine].push(job);
     });
 
     // Process each machine's jobs
@@ -395,54 +393,58 @@ function calculateMaterialSummary() {
         let cumulativeStart = 0;
 
         machineJobs.forEach((job, index) => {
-            const material = job.material || 'Unknown';
             const remainingHours = calculateRemainingHours(job);
-            const remainingMaterial = calculateRemainingMaterial(job);
             const cumulativeEnd = cumulativeStart + remainingHours;
 
-            // Initialize material entry if doesn't exist
-            if (!materialSummary[material]) {
-                materialSummary[material] = {
-                    total: 0,
-                    week1: 0,  // 0-168 hrs
-                    week2: 0,  // 168-336 hrs
-                    week3Plus: 0  // 336+ hrs
-                };
+            // Only track material for regular jobs (not setup/maintenance)
+            if (job.type === 'job') {
+                const material = job.material || 'Unknown';
+                const remainingMaterial = calculateRemainingMaterial(job);
+
+                // Initialize material entry if doesn't exist
+                if (!materialSummary[material]) {
+                    materialSummary[material] = {
+                        total: 0,
+                        week1: 0,  // 0-168 hrs
+                        week2: 0,  // 168-336 hrs
+                        week3Plus: 0  // 336+ hrs
+                    };
+                }
+
+                // Add to total
+                materialSummary[material].total += remainingMaterial;
+
+                // Distribute material across time buckets
+                // Week 1: 0-168 hrs
+                const week1End = 168;
+                if (cumulativeStart < week1End) {
+                    const hoursInWeek1 = Math.min(cumulativeEnd, week1End) - cumulativeStart;
+                    const materialInWeek1 = (hoursInWeek1 / remainingHours) * remainingMaterial;
+                    materialSummary[material].week1 += materialInWeek1;
+                }
+
+                // Week 2: 168-336 hrs
+                const week2Start = 168;
+                const week2End = 336;
+                if (cumulativeEnd > week2Start && cumulativeStart < week2End) {
+                    const bucketStart = Math.max(cumulativeStart, week2Start);
+                    const bucketEnd = Math.min(cumulativeEnd, week2End);
+                    const hoursInWeek2 = bucketEnd - bucketStart;
+                    const materialInWeek2 = (hoursInWeek2 / remainingHours) * remainingMaterial;
+                    materialSummary[material].week2 += materialInWeek2;
+                }
+
+                // Week 3+: 336+ hrs
+                const week3Start = 336;
+                if (cumulativeEnd > week3Start) {
+                    const bucketStart = Math.max(cumulativeStart, week3Start);
+                    const hoursInWeek3Plus = cumulativeEnd - bucketStart;
+                    const materialInWeek3Plus = (hoursInWeek3Plus / remainingHours) * remainingMaterial;
+                    materialSummary[material].week3Plus += materialInWeek3Plus;
+                }
             }
 
-            // Add to total
-            materialSummary[material].total += remainingMaterial;
-
-            // Distribute material across time buckets
-            // Week 1: 0-168 hrs
-            const week1End = 168;
-            if (cumulativeStart < week1End) {
-                const hoursInWeek1 = Math.min(cumulativeEnd, week1End) - cumulativeStart;
-                const materialInWeek1 = (hoursInWeek1 / remainingHours) * remainingMaterial;
-                materialSummary[material].week1 += materialInWeek1;
-            }
-
-            // Week 2: 168-336 hrs
-            const week2Start = 168;
-            const week2End = 336;
-            if (cumulativeEnd > week2Start && cumulativeStart < week2End) {
-                const bucketStart = Math.max(cumulativeStart, week2Start);
-                const bucketEnd = Math.min(cumulativeEnd, week2End);
-                const hoursInWeek2 = bucketEnd - bucketStart;
-                const materialInWeek2 = (hoursInWeek2 / remainingHours) * remainingMaterial;
-                materialSummary[material].week2 += materialInWeek2;
-            }
-
-            // Week 3+: 336+ hrs
-            const week3Start = 336;
-            if (cumulativeEnd > week3Start) {
-                const bucketStart = Math.max(cumulativeStart, week3Start);
-                const hoursInWeek3Plus = cumulativeEnd - bucketStart;
-                const materialInWeek3Plus = (hoursInWeek3Plus / remainingHours) * remainingMaterial;
-                materialSummary[material].week3Plus += materialInWeek3Plus;
-            }
-
-            // Update cumulative start for next job
+            // Update cumulative start for next job (includes all jobs)
             cumulativeStart = cumulativeEnd;
         });
     });
