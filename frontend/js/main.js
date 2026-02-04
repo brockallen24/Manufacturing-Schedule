@@ -232,13 +232,19 @@ function handleDragEnter(e) {
 
 function handleDragOver(e) {
     e.preventDefault();
+    e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
+
+    console.log('Drag over container:', e.currentTarget.getAttribute('data-machine'));
 
     const container = e.currentTarget;
     const afterElement = getDragAfterElement(container, e.clientY);
     const draggable = draggedElement;
 
-    if (!draggable) return;
+    if (!draggable) {
+        console.log('No draggable element found in handleDragOver');
+        return false;
+    }
 
     // Remove existing drop indicator
     const existingIndicator = container.querySelector('.drop-indicator');
@@ -250,8 +256,16 @@ function handleDragOver(e) {
     const indicator = document.createElement('div');
     indicator.className = 'drop-indicator';
 
+    // Find the jobs container (not empty-state)
+    const emptyState = container.querySelector('.empty-state');
+
     if (afterElement == null) {
-        container.appendChild(indicator);
+        // Append at end, after empty state if it exists
+        if (emptyState) {
+            container.insertBefore(indicator, emptyState.nextSibling);
+        } else {
+            container.appendChild(indicator);
+        }
     } else {
         container.insertBefore(indicator, afterElement);
     }
@@ -289,6 +303,8 @@ function getDragAfterElement(container, y) {
 }
 
 async function handleDrop(e) {
+    console.log('DROP EVENT FIRED!', e);
+
     e.stopPropagation();
     e.preventDefault();
 
@@ -296,6 +312,8 @@ async function handleDrop(e) {
     const targetContainer = e.currentTarget;
     const targetMachine = targetContainer.getAttribute('data-machine');
     const afterElement = getDragAfterElement(targetContainer, e.clientY);
+
+    console.log('Drop received: jobId=', jobId, 'targetMachine=', targetMachine);
 
     // Remove drop indicator
     const indicator = targetContainer.querySelector('.drop-indicator');

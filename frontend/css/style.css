@@ -483,6 +483,7 @@ header h1 i {
     padding: 40px 20px;
     color: var(--text-secondary);
     opacity: 0.6;
+    pointer-events: none; /* Don't block drop events */
 }
 
 .empty-state i {
