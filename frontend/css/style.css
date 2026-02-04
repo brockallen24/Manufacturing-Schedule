@@ -292,6 +292,45 @@ header h1 i {
     transition: width 0.3s ease;
 }
 
+/* Hours Summary */
+.hours-summary {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.hours-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+}
+
+.hours-item.cumulative {
+    text-align: right;
+}
+
+.hours-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    opacity: 0.8;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+.hours-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: white;
+}
+
+.hours-item.cumulative .hours-value {
+    color: #ffd700;
+}
+
 .due-date-indicator {
     position: absolute;
     top: 50px;

@@ -236,24 +236,56 @@ function renderJobs() {
         `;
     });
 
-    // Render jobs into their assigned machines
+    // Group jobs by machine for cumulative calculations
+    const jobsByMachine = {};
     state.jobs.forEach(job => {
-        const container = document.querySelector(`.jobs-container[data-machine="${job.machine}"]`);
+        if (!jobsByMachine[job.machine]) {
+            jobsByMachine[job.machine] = [];
+        }
+        jobsByMachine[job.machine].push(job);
+    });
+
+    // Render jobs into their assigned machines
+    Object.keys(jobsByMachine).forEach(machine => {
+        const container = document.querySelector(`.jobs-container[data-machine="${machine}"]`);
         if (container) {
-            // Remove empty state if it exists
+            // Remove empty state
             const emptyState = container.querySelector('.empty-state');
             if (emptyState) emptyState.remove();
 
-            // Create job card
-            const jobCard = createJobCard(job);
-            container.appendChild(jobCard);
+            // Render each job with its position for cumulative calculation
+            jobsByMachine[machine].forEach((job, index) => {
+                const jobCard = createJobCard(job, jobsByMachine[machine], index);
+                container.appendChild(jobCard);
+            });
         }
     });
 }
 
+// Calculate remaining hours for a job based on percentage complete
+function calculateRemainingHours(job) {
+    const totalHours = parseFloat(job.totalHours || job.setupHours || 0);
+    const percentComplete = parseFloat(job.percentComplete || 0);
+    const remainingHours = totalHours * ((100 - percentComplete) / 100);
+    return remainingHours;
+}
+
+// Calculate cumulative hours up to and including this job
+function calculateCumulativeHours(jobsInMachine, currentIndex) {
+    let cumulative = 0;
+    for (let i = 0; i <= currentIndex; i++) {
+        cumulative += calculateRemainingHours(jobsInMachine[i]);
+    }
+    return cumulative;
+}
+
 // Create Job Card
-function createJobCard(job) {
+function createJobCard(job, jobsInMachine = [], jobIndex = 0) {
     const card = document.createElement('div');
+
+    // Calculate hours
+    const remainingHours = calculateRemainingHours(job);
+    const cumulativeHours = calculateCumulativeHours(jobsInMachine, jobIndex);
 
     // Add conditional class based on toolReady status for setup cards
     if (job.type === 'setup') {
@@ -302,6 +334,16 @@ function createJobCard(job) {
             <div class="progress-bar">
                 <div class="progress-fill" style="width: ${job.percentComplete || 0}%"></div>
             </div>
+            <div class="hours-summary">
+                <div class="hours-item">
+                    <span class="hours-label">Remaining:</span>
+                    <span class="hours-value">${remainingHours.toFixed(1)} hrs</span>
+                </div>
+                <div class="hours-item cumulative">
+                    <span class="hours-label">Cumulative:</span>
+                    <span class="hours-value">${cumulativeHours.toFixed(1)} hrs</span>
+                </div>
+            </div>
         `;
     } else {
         card.innerHTML = `
@@ -340,6 +382,16 @@ function createJobCard(job) {
             </div>
             <div class="progress-bar">
                 <div class="progress-fill" style="width: ${job.percentComplete || 0}%"></div>
+            </div>
+            <div class="hours-summary">
+                <div class="hours-item">
+                    <span class="hours-label">Remaining:</span>
+                    <span class="hours-value">${remainingHours.toFixed(1)} hrs</span>
+                </div>
+                <div class="hours-item cumulative">
+                    <span class="hours-label">Cumulative:</span>
+                    <span class="hours-value">${cumulativeHours.toFixed(1)} hrs</span>
+                </div>
             </div>
         `;
     }
