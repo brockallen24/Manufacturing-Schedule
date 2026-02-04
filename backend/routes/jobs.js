@@ -161,6 +161,8 @@ router.put('/:id/archive', async (req, res) => {
       return res.status(400).json({ error: 'Complete date is required' });
     }
 
+    console.log('Attempting to archive job:', req.params.id, 'with completeDate:', completeDate);
+
     const records = await jobsTable.update([
       {
         id: req.params.id,
@@ -171,13 +173,32 @@ router.put('/:id/archive', async (req, res) => {
       }
     ]);
 
+    console.log('Job archived successfully:', records[0].id);
+
     res.json({
       job: mapAirtableToFrontend(records[0]),
       message: 'Job archived successfully'
     });
   } catch (error) {
     console.error('Error archiving job:', error);
-    res.status(500).json({ error: 'Failed to archive job', message: error.message });
+    console.error('Error details:', error.message);
+    console.error('Error statusCode:', error.statusCode);
+    console.error('Error error:', error.error);
+
+    // Check if it's a field error
+    if (error.message && error.message.includes('UNKNOWN_FIELD_NAME')) {
+      return res.status(500).json({
+        error: 'Airtable fields missing',
+        message: 'The "archived" and "completeDate" fields need to be added to your Airtable base. Please add these fields: 1) "archived" as a Checkbox field, 2) "completeDate" as a Date field.',
+        details: error.message
+      });
+    }
+
+    res.status(500).json({
+      error: 'Failed to archive job',
+      message: error.message,
+      details: error.error || 'Unknown error'
+    });
   }
 });
 
