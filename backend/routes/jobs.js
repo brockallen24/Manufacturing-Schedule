@@ -152,14 +152,43 @@ router.patch('/:id', async (req, res) => {
   }
 });
 
+// PUT archive job (sets archived flag and completeDate)
+router.put('/:id/archive', async (req, res) => {
+  try {
+    const { completeDate } = req.body;
+
+    if (!completeDate) {
+      return res.status(400).json({ error: 'Complete date is required' });
+    }
+
+    const records = await jobsTable.update([
+      {
+        id: req.params.id,
+        fields: {
+          archived: true,
+          completeDate: completeDate
+        }
+      }
+    ]);
+
+    res.json({
+      job: mapAirtableToFrontend(records[0]),
+      message: 'Job archived successfully'
+    });
+  } catch (error) {
+    console.error('Error archiving job:', error);
+    res.status(500).json({ error: 'Failed to archive job', message: error.message });
+  }
+});
+
 // DELETE job
 router.delete('/:id', async (req, res) => {
   try {
     await jobsTable.destroy([req.params.id]);
-    
-    res.json({ 
-      message: 'Job deleted successfully', 
-      id: req.params.id 
+
+    res.json({
+      message: 'Job deleted successfully',
+      id: req.params.id
     });
   } catch (error) {
     console.error('Error deleting job:', error);
