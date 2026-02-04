@@ -170,11 +170,61 @@ header h1 i {
 
 .machine-priority {
     font-size: 12px;
-    font-weight: 500;
-    padding: 4px 12px;
+    font-weight: 600;
+    padding: 6px 14px;
     border-radius: 20px;
-    background: var(--bg-color);
-    color: var(--text-secondary);
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: white;
+}
+
+.machine-priority:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.machine-priority:active {
+    transform: scale(0.98);
+}
+
+/* Priority Level Colors */
+.priority-critical {
+    background: #ef4444;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+}
+
+.priority-critical:hover {
+    background: #dc2626;
+}
+
+.priority-high {
+    background: #f59e0b;
+    box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+}
+
+.priority-high:hover {
+    background: #d97706;
+}
+
+.priority-medium {
+    background: #3b82f6;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+.priority-medium:hover {
+    background: #2563eb;
+}
+
+.priority-low {
+    background: #22c55e;
+    box-shadow: 0 2px 4px rgba(34, 197, 94, 0.3);
+}
+
+.priority-low:hover {
+    background: #16a34a;
 }
 
 .jobs-container {

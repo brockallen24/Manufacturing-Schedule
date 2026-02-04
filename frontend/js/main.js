@@ -111,7 +111,9 @@ function createMachineColumns() {
                     <i class="fas fa-cog"></i>
                     ${machine}
                 </div>
-                <div class="machine-priority">Priority: ${priority}</div>
+                <button class="machine-priority priority-${priority.toLowerCase()}" data-machine="${machine}" onclick="togglePriority('${machine}')">
+                    ${priority}
+                </button>
             </div>
             <div class="jobs-container" data-machine="${machine}">
                 <div class="empty-state">
@@ -132,7 +134,52 @@ function createMachineColumns() {
 // Get Machine Priority
 function getMachinePriority(machine) {
     const priority = state.machinePriorities.find(p => p.machine === machine);
-    return priority ? priority.priority : 'N/A';
+    return priority ? priority.priority : 'Low';
+}
+
+// Toggle Machine Priority
+async function togglePriority(machine) {
+    const priorityLevels = ['Low', 'Medium', 'High', 'Critical'];
+    const currentPriority = getMachinePriority(machine);
+    const currentIndex = priorityLevels.indexOf(currentPriority);
+    const nextIndex = (currentIndex + 1) % priorityLevels.length;
+    const newPriority = priorityLevels[nextIndex];
+
+    try {
+        // Update on server
+        await updateMachinePriority(machine, newPriority);
+
+        // Update local state
+        const priorityObj = state.machinePriorities.find(p => p.machine === machine);
+        if (priorityObj) {
+            priorityObj.priority = newPriority;
+        } else {
+            state.machinePriorities.push({ machine, priority: newPriority });
+        }
+
+        // Update UI
+        const button = document.querySelector(`.machine-priority[data-machine="${machine}"]`);
+        if (button) {
+            button.textContent = newPriority;
+            button.className = `machine-priority priority-${newPriority.toLowerCase()}`;
+        }
+
+        showToast(`Priority updated to ${newPriority}`, 'success');
+    } catch (error) {
+        console.error('Error updating priority:', error);
+        showToast('Failed to update priority', 'error');
+    }
+}
+
+// Update Machine Priority API call
+async function updateMachinePriority(machine, priority) {
+    const response = await fetch(`${API_BASE_URL}/priorities/${machine}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priority })
+    });
+    if (!response.ok) throw new Error('Failed to update priority');
+    return response.json();
 }
 
 // Setup Drag and Drop
