@@ -266,6 +266,87 @@ function renderJobs() {
             });
         }
     });
+
+    // Render material summary
+    renderMaterialSummary();
+}
+
+// Render Material Summary Box
+function renderMaterialSummary() {
+    const scheduleBoard = document.getElementById('scheduleBoard');
+
+    // Remove existing material summary if present
+    const existingSummary = document.getElementById('materialSummary');
+    if (existingSummary) {
+        existingSummary.remove();
+    }
+
+    // Calculate material summary
+    const materialSummary = calculateMaterialSummary();
+
+    // Create material summary column
+    const summaryColumn = document.createElement('div');
+    summaryColumn.id = 'materialSummary';
+    summaryColumn.className = 'machine-column material-summary-column';
+
+    // Build HTML content
+    let summaryHTML = `
+        <div class="machine-header">
+            <div class="machine-name">
+                <i class="fas fa-box"></i>
+                Material Summary
+            </div>
+        </div>
+        <div class="material-summary-content">
+    `;
+
+    // Sort materials alphabetically
+    const sortedMaterials = Object.keys(materialSummary).sort();
+
+    if (sortedMaterials.length === 0) {
+        summaryHTML += `
+            <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <p>No materials to display</p>
+            </div>
+        `;
+    } else {
+        sortedMaterials.forEach(material => {
+            const data = materialSummary[material];
+            summaryHTML += `
+                <div class="material-item">
+                    <div class="material-name">${material}</div>
+                    <div class="material-breakdown">
+                        <div class="material-row total">
+                            <span class="material-label">Total:</span>
+                            <span class="material-value">${data.total.toFixed(1)} lbs</span>
+                        </div>
+                        <div class="material-row">
+                            <span class="material-label">1 wk:</span>
+                            <span class="material-value">${data.week1.toFixed(1)} lbs</span>
+                            <span class="material-timeframe">(0-168 hrs)</span>
+                        </div>
+                        <div class="material-row">
+                            <span class="material-label">2 wk:</span>
+                            <span class="material-value">${data.week2.toFixed(1)} lbs</span>
+                            <span class="material-timeframe">(168-336 hrs)</span>
+                        </div>
+                        <div class="material-row">
+                            <span class="material-label">3 wk+:</span>
+                            <span class="material-value">${data.week3Plus.toFixed(1)} lbs</span>
+                            <span class="material-timeframe">(336+ hrs)</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    summaryHTML += `</div>`;
+    summaryColumn.innerHTML = summaryHTML;
+
+    // Append to schedule board
+    scheduleBoard.appendChild(summaryColumn);
 }
 
 // Calculate remaining hours for a job based on percentage complete
@@ -291,6 +372,82 @@ function calculateCumulativeHours(jobsInMachine, currentIndex) {
         cumulative += calculateRemainingHours(jobsInMachine[i]);
     }
     return cumulative;
+}
+
+// Calculate material summary by time buckets
+function calculateMaterialSummary() {
+    const materialSummary = {};
+
+    // Group jobs by machine to get proper cumulative hours
+    const jobsByMachine = {};
+    state.jobs.forEach(job => {
+        if (job.type === 'job') { // Only process regular jobs, not setup/maintenance
+            if (!jobsByMachine[job.machine]) {
+                jobsByMachine[job.machine] = [];
+            }
+            jobsByMachine[job.machine].push(job);
+        }
+    });
+
+    // Process each machine's jobs
+    Object.keys(jobsByMachine).forEach(machine => {
+        const machineJobs = jobsByMachine[machine];
+        let cumulativeStart = 0;
+
+        machineJobs.forEach((job, index) => {
+            const material = job.material || 'Unknown';
+            const remainingHours = calculateRemainingHours(job);
+            const remainingMaterial = calculateRemainingMaterial(job);
+            const cumulativeEnd = cumulativeStart + remainingHours;
+
+            // Initialize material entry if doesn't exist
+            if (!materialSummary[material]) {
+                materialSummary[material] = {
+                    total: 0,
+                    week1: 0,  // 0-168 hrs
+                    week2: 0,  // 168-336 hrs
+                    week3Plus: 0  // 336+ hrs
+                };
+            }
+
+            // Add to total
+            materialSummary[material].total += remainingMaterial;
+
+            // Distribute material across time buckets
+            // Week 1: 0-168 hrs
+            const week1End = 168;
+            if (cumulativeStart < week1End) {
+                const hoursInWeek1 = Math.min(cumulativeEnd, week1End) - cumulativeStart;
+                const materialInWeek1 = (hoursInWeek1 / remainingHours) * remainingMaterial;
+                materialSummary[material].week1 += materialInWeek1;
+            }
+
+            // Week 2: 168-336 hrs
+            const week2Start = 168;
+            const week2End = 336;
+            if (cumulativeEnd > week2Start && cumulativeStart < week2End) {
+                const bucketStart = Math.max(cumulativeStart, week2Start);
+                const bucketEnd = Math.min(cumulativeEnd, week2End);
+                const hoursInWeek2 = bucketEnd - bucketStart;
+                const materialInWeek2 = (hoursInWeek2 / remainingHours) * remainingMaterial;
+                materialSummary[material].week2 += materialInWeek2;
+            }
+
+            // Week 3+: 336+ hrs
+            const week3Start = 336;
+            if (cumulativeEnd > week3Start) {
+                const bucketStart = Math.max(cumulativeStart, week3Start);
+                const hoursInWeek3Plus = cumulativeEnd - bucketStart;
+                const materialInWeek3Plus = (hoursInWeek3Plus / remainingHours) * remainingMaterial;
+                materialSummary[material].week3Plus += materialInWeek3Plus;
+            }
+
+            // Update cumulative start for next job
+            cumulativeStart = cumulativeEnd;
+        });
+    });
+
+    return materialSummary;
 }
 
 // Create Job Card
