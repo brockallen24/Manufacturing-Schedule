@@ -73,6 +73,12 @@ function setupEventListeners() {
         input?.addEventListener('input', calculateTotalHours);
     });
 
+    // Auto-calculate percent complete from parts completed
+    const partsCompleted = document.getElementById('partsCompleted');
+    partsCompleted?.addEventListener('input', calculatePercentFromParts);
+    // Also recalculate percent when numParts changes (if partsCompleted has a value)
+    numParts?.addEventListener('input', calculatePercentFromParts);
+
     // Percent complete sliders
     document.getElementById('percentComplete')?.addEventListener('input', (e) => {
         document.getElementById('percentCompleteValue').textContent = e.target.value;
@@ -369,6 +375,7 @@ function createJobCard(job, cumulativeHours = 0) {
                     <span>${job.totalHours} hrs</span>
                 </div>
             </div>
+            ${job.partsCompleted ? `<div class="job-detail parts-completed"><i class="fas fa-check-double"></i> Parts: ${job.partsCompleted} / ${job.numParts}</div>` : ''}
             <div class="progress-bar">
                 <div class="progress-fill" style="width: ${job.percentComplete || 0}%"></div>
             </div>
@@ -408,6 +415,7 @@ function openJobModal(jobId = null) {
             document.getElementById('totalMaterial').value = job.totalMaterial || '';
             document.getElementById('totalHours').value = job.totalHours || '';
             document.getElementById('dueDate').value = job.dueDate || '';
+            document.getElementById('partsCompleted').value = job.partsCompleted || '';
             document.getElementById('percentComplete').value = job.percentComplete || 0;
             document.getElementById('percentCompleteValue').textContent = job.percentComplete || 0;
             document.getElementById('machineSelect').value = job.machine || '';
@@ -467,6 +475,7 @@ async function handleJobSubmit(e) {
         totalMaterial: parseFloat(document.getElementById('totalMaterial').value),
         totalHours: parseFloat(document.getElementById('totalHours').value),
         dueDate: document.getElementById('dueDate').value,
+        partsCompleted: parseInt(document.getElementById('partsCompleted').value) || 0,
         percentComplete: parseInt(document.getElementById('percentComplete').value),
         machine: document.getElementById('machineSelect').value
     };
@@ -584,6 +593,17 @@ window.deleteJob = async function(jobId) {
 };
 
 // Utility Functions
+function calculatePercentFromParts() {
+    const partsCompleted = parseInt(document.getElementById('partsCompleted')?.value) || 0;
+    const numParts = parseInt(document.getElementById('numParts')?.value) || 0;
+
+    if (numParts > 0) {
+        const percent = Math.min(100, Math.round((partsCompleted / numParts) * 100));
+        document.getElementById('percentComplete').value = percent;
+        document.getElementById('percentCompleteValue').textContent = percent;
+    }
+}
+
 function calculateTotalHours() {
     const cycleTime = parseFloat(document.getElementById('cycleTime')?.value) || 0;
     const numParts = parseInt(document.getElementById('numParts')?.value) || 0;
