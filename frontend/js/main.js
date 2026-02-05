@@ -156,32 +156,122 @@ function handleDragEnd(e) {
 }
 
 function handleDragOver(e) {
-    if (e.preventDefault) {
-        e.preventDefault();
-    }
+    e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    e.currentTarget.classList.add('drag-over');
-    return false;
+
+    const container = e.currentTarget;
+    container.classList.add('drag-over');
+
+    // Remove any existing drop indicator
+    container.querySelectorAll('.drop-indicator').forEach(el => el.remove());
+
+    // Show a visual indicator of where the card will be inserted
+    const afterElement = getDragAfterElement(container, e.clientY);
+    const indicator = document.createElement('div');
+    indicator.className = 'drop-indicator';
+
+    if (afterElement) {
+        container.insertBefore(indicator, afterElement);
+    } else {
+        container.appendChild(indicator);
+    }
 }
 
 function handleDragLeave(e) {
-    e.currentTarget.classList.remove('drag-over');
+    // Only handle if we're actually leaving the container (not entering a child)
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+        e.currentTarget.classList.remove('drag-over');
+        e.currentTarget.querySelectorAll('.drop-indicator').forEach(el => el.remove());
+    }
 }
 
-function handleDrop(e) {
-    if (e.stopPropagation) {
-        e.stopPropagation();
-    }
+// Find the element the dragged card should be placed before
+function getDragAfterElement(container, y) {
+    const cards = [...container.querySelectorAll('.job-card:not(.dragging)')];
+
+    return cards.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+            return { offset, element: child };
+        }
+        return closest;
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+async function handleDrop(e) {
+    e.stopPropagation();
     e.preventDefault();
 
+    const container = e.currentTarget;
+    container.classList.remove('drag-over');
+    container.querySelectorAll('.drop-indicator').forEach(el => el.remove());
+
     const jobId = e.dataTransfer.getData('jobId');
-    const targetMachine = e.currentTarget.getAttribute('data-machine');
+    if (!jobId) return;
 
-    // Update job machine assignment
-    updateJobMachine(jobId, targetMachine);
+    const targetMachine = container.getAttribute('data-machine');
+    const afterElement = getDragAfterElement(container, e.clientY);
 
-    e.currentTarget.classList.remove('drag-over');
-    return false;
+    // Build the new ordered list of job IDs for the target machine
+    const existingCards = [...container.querySelectorAll('.job-card:not(.dragging)')];
+    const orderedIds = existingCards.map(card => card.getAttribute('data-job-id'));
+
+    // Determine insertion index
+    let insertIndex;
+    if (afterElement) {
+        const afterId = afterElement.getAttribute('data-job-id');
+        insertIndex = orderedIds.indexOf(afterId);
+    } else {
+        insertIndex = orderedIds.length;
+    }
+
+    // Remove dragged job from list if it was already in this machine
+    const existingIndex = orderedIds.indexOf(jobId);
+    if (existingIndex !== -1) {
+        orderedIds.splice(existingIndex, 1);
+        if (existingIndex < insertIndex) insertIndex--;
+    }
+
+    // Insert at new position
+    orderedIds.splice(insertIndex, 0, jobId);
+
+    // Check if the job is moving to a different machine
+    const draggedJob = state.jobs.find(j => j.id === jobId);
+    const machineChanged = draggedJob && draggedJob.machine !== targetMachine;
+
+    // Update sortOrder for all jobs in the target machine
+    try {
+        const updatePromises = orderedIds.map((id, index) => {
+            const newSortOrder = index + 1;
+            const job = state.jobs.find(j => j.id === id);
+
+            if (id === jobId && machineChanged) {
+                // Moving to a different machine — update machine and sortOrder
+                return fetch(`${API_BASE_URL}/jobs/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ machine: targetMachine, sortOrder: newSortOrder })
+                });
+            } else if (!job || job.sortOrder !== newSortOrder) {
+                // Just update sortOrder if it changed
+                return fetch(`${API_BASE_URL}/jobs/${id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sortOrder: newSortOrder })
+                });
+            }
+            return Promise.resolve();
+        });
+
+        await Promise.all(updatePromises);
+        await loadJobs();
+        renderJobs();
+        showToast('Job moved successfully', 'success');
+    } catch (error) {
+        console.error('Error reordering jobs:', error);
+        showToast('Failed to move job', 'error');
+    }
 }
 
 // Load Data from API
@@ -548,18 +638,6 @@ async function updateJob(jobId, jobData) {
     });
     if (!response.ok) throw new Error('Failed to update job');
     return await response.json();
-}
-
-async function updateJobMachine(jobId, machine) {
-    try {
-        await updateJob(jobId, { machine });
-        await loadJobs();
-        renderJobs();
-        showToast('Job moved successfully', 'success');
-    } catch (error) {
-        console.error('Error updating job machine:', error);
-        showToast('Failed to move job', 'error');
-    }
 }
 
 // Global functions for inline event handlers

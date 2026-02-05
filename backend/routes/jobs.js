@@ -123,9 +123,10 @@ router.put('/:id', async (req, res) => {
       }
     });
 
-    // If machine is being updated, check if it actually changed
-    // and assign sortOrder to place at end of the new machine's list
-    if (cleanedData.machine) {
+    // If machine is being updated and sortOrder was NOT explicitly provided,
+    // auto-assign sortOrder to place at end of the new machine's list.
+    // When sortOrder IS provided (e.g. drag-drop reorder), respect it.
+    if (cleanedData.machine && !('sortOrder' in cleanedData)) {
       const currentRecord = await jobsTable.find(req.params.id);
       if (currentRecord.fields.machine !== cleanedData.machine) {
         cleanedData.sortOrder = await getNextSortOrder(cleanedData.machine);
@@ -163,9 +164,9 @@ router.patch('/:id', async (req, res) => {
       }
     });
 
-    // If machine is being updated, check if it actually changed
-    // and assign sortOrder to place at end of the new machine's list
-    if (cleanedData.machine) {
+    // If machine is being updated and sortOrder was NOT explicitly provided,
+    // auto-assign sortOrder to place at end of the new machine's list.
+    if (cleanedData.machine && !('sortOrder' in cleanedData)) {
       const currentRecord = await jobsTable.find(req.params.id);
       if (currentRecord.fields.machine !== cleanedData.machine) {
         cleanedData.sortOrder = await getNextSortOrder(cleanedData.machine);

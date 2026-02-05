@@ -329,9 +329,17 @@ header h1 i {
 
 /* Drag and Drop States */
 .jobs-container.drag-over {
-    background: rgba(37, 99, 235, 0.1);
+    background: rgba(37, 99, 235, 0.05);
     border: 2px dashed var(--primary-color);
     border-radius: 8px;
+}
+
+.drop-indicator {
+    height: 4px;
+    background: var(--primary-color);
+    border-radius: 2px;
+    margin: 2px 0;
+    box-shadow: 0 0 6px rgba(37, 99, 235, 0.5);
 }
 
 /* Modal */
