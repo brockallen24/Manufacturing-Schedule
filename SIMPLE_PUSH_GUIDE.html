@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Push Guide - 3 Easy Steps</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f0f4f8;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2d3748;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #718096;
+            font-size: 18px;
+            margin-bottom: 30px;
+        }
+        .important {
+            background: #fff5f5;
+            border: 3px solid #fc8181;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 30px 0;
+            font-size: 18px;
+        }
+        .step {
+            background: #f7fafc;
+            border-left: 5px solid #4299e1;
+            padding: 25px;
+            margin: 25px 0;
+            border-radius: 8px;
+        }
+        .step-number {
+            display: inline-block;
+            background: #4299e1;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 40px;
+            font-weight: bold;
+            font-size: 20px;
+            margin-right: 15px;
+        }
+        .step h2 {
+            display: inline-block;
+            color: #2d3748;
+            margin: 0 0 15px 0;
+            font-size: 24px;
+        }
+        .command {
+            background: #1a202c;
+            color: #48bb78;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            margin: 15px 0;
+            border: 2px solid #48bb78;
+        }
+        .highlight {
+            background: #fef5e7;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .success {
+            background: #f0fff4;
+            border: 3px solid #48bb78;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 30px 0;
+        }
+        .button {
+            display: inline-block;
+            background: #4299e1;
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px 5px;
+        }
+        .button:hover {
+            background: #3182ce;
+        }
+        ul {
+            font-size: 16px;
+            line-height: 1.8;
+        }
+        .screenshot {
+            background: #edf2f7;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            text-align: center;
+            color: #718096;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Push Your Code - 3 Easy Steps</h1>
+        <p class="subtitle">Remove the login screen in just 2 minutes</p>
+
+        <div class="important">
+            <strong>⚠️ IMPORTANT:</strong> You <strong>CANNOT</strong> push code from the GitHub website.
+            <br><br>
+            The GitHub website only shows your code - it cannot access files on your computer.
+            <br><br>
+            You need to use <strong>ONE simple command</strong> on your computer.
+        </div>
+
+        <div class="step">
+            <span class="step-number">1</span>
+            <h2>Open Terminal</h2>
+            <p style="margin-left: 55px; font-size: 16px;">
+                <strong>On Windows:</strong>
+            </p>
+            <ul style="margin-left: 55px;">
+                <li>Press <span class="highlight">Windows Key + R</span></li>
+                <li>Type: <span class="highlight">cmd</span></li>
+                <li>Press Enter</li>
+            </ul>
+
+            <p style="margin-left: 55px; font-size: 16px; margin-top: 20px;">
+                <strong>On Mac:</strong>
+            </p>
+            <ul style="margin-left: 55px;">
+                <li>Press <span class="highlight">Command + Space</span></li>
+                <li>Type: <span class="highlight">terminal</span></li>
+                <li>Press Enter</li>
+            </ul>
+
+            <div class="screenshot" style="margin-left: 55px;">
+                A black or white window will open - this is your terminal ✅
+            </div>
+        </div>
+
+        <div class="step">
+            <span class="step-number">2</span>
+            <h2>Navigate to Your Project</h2>
+            <p style="margin-left: 55px; font-size: 16px;">
+                Type this command and press Enter:
+            </p>
+            <div class="command" style="margin-left: 55px;">
+                cd /home/user/Manufacturing-Schedule
+            </div>
+            <p style="margin-left: 55px; font-size: 14px; color: #718096;">
+                <strong>Note:</strong> If your project is in a different location, replace the path above with your actual path
+            </p>
+        </div>
+
+        <div class="step">
+            <span class="step-number">3</span>
+            <h2>Run the Push Command</h2>
+            <p style="margin-left: 55px; font-size: 16px;">
+                Type this ONE command and press Enter:
+            </p>
+            <div class="command" style="margin-left: 55px;">
+                git push origin main
+            </div>
+            <p style="margin-left: 55px; font-size: 16px; margin-top: 20px;">
+                <strong>What you'll see:</strong>
+            </p>
+            <ul style="margin-left: 55px;">
+                <li>It might ask for your GitHub username - type it and press Enter</li>
+                <li>It might ask for your password - use a <strong>Personal Access Token</strong> (see below)</li>
+                <li>You'll see "Counting objects..." and "Writing objects..."</li>
+                <li>Finally: "5 commits pushed" ✅</li>
+            </ul>
+        </div>
+
+        <div class="success">
+            <h3 style="margin-top: 0;">✅ That's It! You're Done!</h3>
+            <p style="font-size: 16px;">
+                Once the push completes:
+            </p>
+            <ul style="font-size: 16px;">
+                <li>✅ Your code is on GitHub</li>
+                <li>✅ Heroku will auto-deploy (if enabled)</li>
+                <li>✅ The login screen will be removed</li>
+                <li>✅ Cumulative hours and Material Usage will appear</li>
+            </ul>
+            <p style="font-size: 16px; margin-top: 20px;">
+                <strong>Next steps:</strong>
+            </p>
+            <ol style="font-size: 16px;">
+                <li>Go to <a href="https://dashboard.heroku.com/apps" target="_blank" style="color: #4299e1;">Heroku Dashboard</a></li>
+                <li>Click your app → Activity tab</li>
+                <li>Wait for "Build succeeded" (1-2 minutes)</li>
+                <li>Visit your app and refresh (Ctrl+Shift+R)</li>
+            </ol>
+        </div>
+
+        <h2 style="margin-top: 40px;">🔐 GitHub Authentication Help</h2>
+
+        <div class="step">
+            <h3 style="margin-left: 0;">If It Asks for Password:</h3>
+            <p style="font-size: 16px;">
+                GitHub requires a <strong>Personal Access Token</strong> instead of your password.
+            </p>
+
+            <p style="font-size: 16px; margin-top: 20px;">
+                <strong>Quick Setup:</strong>
+            </p>
+            <ol style="font-size: 16px;">
+                <li>Go to: <a href="https://github.com/settings/tokens" target="_blank" class="button">Create Token →</a></li>
+                <li>Click <span class="highlight">Generate new token (classic)</span></li>
+                <li>Give it a name: "Manufacturing Schedule"</li>
+                <li>Check the box: <span class="highlight">repo</span> (full control)</li>
+                <li>Click <span class="highlight">Generate token</span> at bottom</li>
+                <li>Copy the token (it looks like: ghp_xxxxxxxxxxxx)</li>
+                <li>Use THIS as your "password" when pushing</li>
+            </ol>
+        </div>
+
+        <h2 style="margin-top: 40px;">❓ Still Having Trouble?</h2>
+
+        <div class="step">
+            <h3 style="margin-left: 0;">Alternative: GitHub Desktop (No Terminal)</h3>
+            <p style="font-size: 16px;">
+                If you absolutely cannot use terminal, download GitHub Desktop:
+            </p>
+            <a href="https://desktop.github.com/" target="_blank" class="button">Download GitHub Desktop →</a>
+
+            <p style="font-size: 16px; margin-top: 20px;">
+                <strong>Then:</strong>
+            </p>
+            <ol style="font-size: 16px;">
+                <li>Open GitHub Desktop</li>
+                <li>File → Add Local Repository</li>
+                <li>Browse to your Manufacturing-Schedule folder</li>
+                <li>Click the "Push origin" button at top</li>
+                <li>Done! ✅</li>
+            </ol>
+        </div>
+
+        <div class="important" style="margin-top: 40px;">
+            <strong>💡 Remember:</strong>
+            <br><br>
+            • The GitHub <strong>website</strong> cannot push commits from your computer
+            <br>
+            • You need either: <strong>Terminal (1 command)</strong> OR <strong>GitHub Desktop (click button)</strong>
+            <br>
+            • This is the ONLY way to deploy your changes
+            <br><br>
+            <strong>Total time: 2 minutes ⏱️</strong>
+        </div>
+
+        <div style="text-align: center; margin-top: 40px; padding: 30px; background: #f7fafc; border-radius: 8px;">
+            <h3>🎯 Quick Links</h3>
+            <a href="https://dashboard.heroku.com/apps" target="_blank" class="button">Heroku Dashboard</a>
+            <a href="https://github.com/settings/tokens" target="_blank" class="button">Create GitHub Token</a>
+            <a href="https://desktop.github.com/" target="_blank" class="button">Download GitHub Desktop</a>
+        </div>
+
+    </div>
+</body>
+</html>

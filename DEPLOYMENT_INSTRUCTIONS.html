@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manufacturing Schedule - Deployment Instructions</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            line-height: 1.6;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2563eb;
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #1e293b;
+            margin-top: 30px;
+        }
+        .step {
+            background: #f8fafc;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #2563eb;
+            border-radius: 4px;
+        }
+        .step-number {
+            display: inline-block;
+            background: #2563eb;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        code {
+            background: #1e293b;
+            color: #10b981;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            display: block;
+            margin: 10px 0;
+            padding: 15px;
+            overflow-x: auto;
+        }
+        .inline-code {
+            display: inline;
+            padding: 2px 6px;
+            margin: 0 2px;
+        }
+        .warning {
+            background: #fef3c7;
+            border-left-color: #f59e0b;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background: #d1fae5;
+            border-left-color: #10b981;
+            border-left: 4px solid #10b981;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .info {
+            background: #dbeafe;
+            border-left-color: #3b82f6;
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        ul {
+            margin: 10px 0;
+        }
+        li {
+            margin: 8px 0;
+        }
+        a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .feature-list {
+            background: #f1f5f9;
+            padding: 15px 20px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Manufacturing Schedule - Deployment Instructions</h1>
+
+        <div class="info">
+            <strong>📦 Ready to Deploy:</strong> You have <strong>3 new commits</strong> ready to push to production!
+        </div>
+
+        <div class="feature-list">
+            <h3>✨ New Features Included:</h3>
+            <ul>
+                <li>✅ <strong>Cumulative Hours Display</strong> - Each job card shows total remaining work hours</li>
+                <li>✅ <strong>Login Screen Removal</strong> - Authentication completely removed for direct access</li>
+                <li>✅ <strong>Material Usage Box</strong> - Smart material tracking across 3 timeframes (1 week, 2 weeks, 3 weeks)</li>
+            </ul>
+        </div>
+
+        <h2>📋 Deployment Steps</h2>
+
+        <div class="step">
+            <span class="step-number">1</span>
+            <strong>Open Terminal/Command Prompt</strong>
+            <ul>
+                <li><strong>Windows:</strong> Press <code class="inline-code">Win + R</code>, type <code class="inline-code">cmd</code>, press Enter</li>
+                <li><strong>Mac:</strong> Press <code class="inline-code">Cmd + Space</code>, type <code class="inline-code">terminal</code>, press Enter</li>
+                <li><strong>Linux:</strong> Press <code class="inline-code">Ctrl + Alt + T</code></li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <span class="step-number">2</span>
+            <strong>Navigate to Project Directory</strong>
+            <p>Change to your Manufacturing Schedule directory:</p>
+            <code>cd /path/to/Manufacturing-Schedule</code>
+            <p><em>Replace <code class="inline-code">/path/to/</code> with your actual project location</em></p>
+        </div>
+
+        <div class="step">
+            <span class="step-number">3</span>
+            <strong>Push Changes to GitHub</strong>
+            <p>Run this command to upload your commits:</p>
+            <code>git push origin main</code>
+            <p><strong>Expected Output:</strong></p>
+            <code>Counting objects: XX, done.
+Writing objects: 100% (XX/XX), done.
+To https://github.com/brockallen24/Manufacturing-Schedule.git
+   7706532..c6a44c7  main -> main</code>
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ If Authentication is Required:</strong>
+            <ul>
+                <li><strong>Username:</strong> Your GitHub username</li>
+                <li><strong>Password:</strong> Use a <strong>Personal Access Token</strong> (not your GitHub password)</li>
+                <li>Create a token at: <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a></li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <span class="step-number">4</span>
+            <strong>Monitor Heroku Deployment</strong>
+            <p>Heroku will automatically deploy after GitHub push (if auto-deploy is enabled).</p>
+            <p><strong>Check deployment status:</strong></p>
+            <ol>
+                <li>Go to: <a href="https://dashboard.heroku.com/apps" target="_blank">dashboard.heroku.com/apps</a></li>
+                <li>Click on your Manufacturing Schedule app</li>
+                <li>Go to the <strong>"Activity"</strong> tab</li>
+                <li>Watch for "Build succeeded" message</li>
+            </ol>
+        </div>
+
+        <div class="step">
+            <span class="step-number">5</span>
+            <strong>Access Your Updated Application</strong>
+            <p>Once deployment completes:</p>
+            <ol>
+                <li>Visit your Heroku app URL (usually <code class="inline-code">https://your-app-name.herokuapp.com</code>)</li>
+                <li><strong>Hard refresh</strong> your browser to clear cache:
+                    <ul>
+                        <li><strong>Windows/Linux:</strong> <code class="inline-code">Ctrl + Shift + R</code> or <code class="inline-code">Ctrl + F5</code></li>
+                        <li><strong>Mac:</strong> <code class="inline-code">Cmd + Shift + R</code></li>
+                    </ul>
+                </li>
+            </ol>
+        </div>
+
+        <div class="success">
+            <strong>✅ Success Indicators:</strong>
+            <ul>
+                <li>You'll see <strong>"Cumulative: X.XX hrs"</strong> at the bottom of each job card</li>
+                <li><strong>No login screen</strong> appears when accessing the app</li>
+                <li>A new <strong>"Material Usage"</strong> column appears after all machines</li>
+                <li>Material Usage shows three colored timeframes (blue, orange, red)</li>
+            </ul>
+        </div>
+
+        <h2>🔗 Useful Links</h2>
+        <ul>
+            <li><strong>Heroku Dashboard:</strong> <a href="https://dashboard.heroku.com/apps" target="_blank">dashboard.heroku.com/apps</a></li>
+            <li><strong>GitHub Repository:</strong> <a href="https://github.com/brockallen24/Manufacturing-Schedule" target="_blank">github.com/brockallen24/Manufacturing-Schedule</a></li>
+            <li><strong>GitHub Token Settings:</strong> <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a></li>
+        </ul>
+
+        <h2>❓ Troubleshooting</h2>
+
+        <div class="warning">
+            <strong>Problem: Push Rejected</strong>
+            <p>If you see "failed to push" or "rejected":</p>
+            <code>git pull origin main
+git push origin main</code>
+        </div>
+
+        <div class="warning">
+            <strong>Problem: Changes Not Visible</strong>
+            <ol>
+                <li>Verify deployment completed on Heroku Activity tab</li>
+                <li>Clear browser cache completely</li>
+                <li>Try opening in Incognito/Private window</li>
+                <li>Check browser console for JavaScript errors (F12 → Console tab)</li>
+            </ol>
+        </div>
+
+        <div class="warning">
+            <strong>Problem: Heroku Not Auto-Deploying</strong>
+            <p>Manually deploy from Heroku Dashboard:</p>
+            <ol>
+                <li>Go to your app's <strong>"Deploy"</strong> tab</li>
+                <li>Scroll to <strong>"Manual deploy"</strong> section</li>
+                <li>Select <code class="inline-code">main</code> branch</li>
+                <li>Click <strong>"Deploy Branch"</strong></li>
+            </ol>
+        </div>
+
+        <h2>📊 Material Usage Calculation Example</h2>
+        <div class="info">
+            <strong>Example Scenario:</strong>
+            <ul>
+                <li>Material: ABS Plastic</li>
+                <li>Job total: 100 lbs</li>
+                <li>25% complete → 75 lbs remaining</li>
+                <li>200 hours remaining</li>
+                <li>Job runs from 0-200 cumulative hours</li>
+            </ul>
+            <strong>Result:</strong>
+            <ul>
+                <li><strong>Timeframe 1 (0-168 hrs):</strong> 63 lbs (84% of remaining)</li>
+                <li><strong>Timeframe 2 (168-336 hrs):</strong> 12 lbs (16% of remaining)</li>
+                <li><strong>Timeframe 3 (336-504 hrs):</strong> 0 lbs</li>
+            </ul>
+        </div>
+
+        <hr style="margin: 40px 0; border: none; border-top: 2px solid #e2e8f0;">
+
+        <p style="text-align: center; color: #64748b; font-size: 14px;">
+            <strong>Need Help?</strong> Contact your development team or check the Heroku logs for detailed error messages.
+        </p>
+    </div>
+</body>
+</html>
