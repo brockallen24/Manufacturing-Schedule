@@ -212,7 +212,7 @@ async function updateMachinePriority(machine, priority) {
     const response = await fetch(`${API_BASE_URL}/priorities/${machine}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priority })
+        body: JSON.stringify({ priority: priority.toLowerCase() })
     });
     if (!response.ok) throw new Error('Failed to update priority');
     return response.json();
