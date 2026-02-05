@@ -11,6 +11,22 @@ function mapAirtableToFrontend(record) {
   };
 }
 
+// Helper function to get the next sortOrder value for a machine
+async function getNextSortOrder(machine) {
+  const records = await jobsTable.select({
+    filterByFormula: `{machine} = '${machine}'`,
+    fields: ['sortOrder'],
+  }).all();
+
+  let maxOrder = 0;
+  records.forEach(record => {
+    const order = record.fields.sortOrder || 0;
+    if (order > maxOrder) maxOrder = order;
+  });
+
+  return maxOrder + 1;
+}
+
 // GET all jobs
 router.get('/', async (req, res) => {
   try {
@@ -62,6 +78,9 @@ router.post('/', async (req, res) => {
       }
     });
 
+    // Assign sortOrder to place new item at end of the machine's list
+    cleanedData.sortOrder = await getNextSortOrder(cleanedData.machine);
+
     console.log('Creating job with fields:', cleanedData);
 
     const records = await jobsTable.create([
@@ -104,6 +123,15 @@ router.put('/:id', async (req, res) => {
       }
     });
 
+    // If machine is being updated, check if it actually changed
+    // and assign sortOrder to place at end of the new machine's list
+    if (cleanedData.machine) {
+      const currentRecord = await jobsTable.find(req.params.id);
+      if (currentRecord.fields.machine !== cleanedData.machine) {
+        cleanedData.sortOrder = await getNextSortOrder(cleanedData.machine);
+      }
+    }
+
     const records = await jobsTable.update([
       {
         id: req.params.id,
@@ -134,6 +162,15 @@ router.patch('/:id', async (req, res) => {
         cleanedData[key] = updates[key];
       }
     });
+
+    // If machine is being updated, check if it actually changed
+    // and assign sortOrder to place at end of the new machine's list
+    if (cleanedData.machine) {
+      const currentRecord = await jobsTable.find(req.params.id);
+      if (currentRecord.fields.machine !== cleanedData.machine) {
+        cleanedData.sortOrder = await getNextSortOrder(cleanedData.machine);
+      }
+    }
 
     const records = await jobsTable.update([
       {

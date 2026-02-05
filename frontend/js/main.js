@@ -245,6 +245,11 @@ function renderJobs() {
         jobsByMachine[job.machine].push(job);
     });
 
+    // Sort jobs within each machine by sortOrder so new items appear at the end
+    Object.keys(jobsByMachine).forEach(machine => {
+        jobsByMachine[machine].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+    });
+
     // Render jobs into their assigned machines with cumulative hours
     Object.keys(jobsByMachine).forEach(machine => {
         const container = document.querySelector(`.jobs-container[data-machine="${machine}"]`);
