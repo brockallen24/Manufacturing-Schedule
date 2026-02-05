@@ -28,15 +28,15 @@ router.get('/', async (req, res) => {
 router.get('/:machine', async (req, res) => {
   try {
     const records = await prioritiesTable.select({
-      filterByFormula: `{machine} = '${req.params.machine}'`
+      filterByFormula: `{Name} = '${req.params.machine}'`
     }).firstPage();
-    
+
     if (records.length === 0) {
       return res.status(404).json({ error: 'Machine priority not found' });
     }
-    
-    res.json({ 
-      machine: records[0].fields.machine,
+
+    res.json({
+      machine: records[0].fields.Name,
       priority: records[0].fields.priority,
       id: records[0].id
     });
@@ -66,11 +66,11 @@ router.put('/:machine', async (req, res) => {
     
     // Find existing record
     const existingRecords = await prioritiesTable.select({
-      filterByFormula: `{machine} = '${req.params.machine}'`
+      filterByFormula: `{Name} = '${req.params.machine}'`
     }).firstPage();
-    
+
     let record;
-    
+
     if (existingRecords.length > 0) {
       // Update existing record
       const updated = await prioritiesTable.update([
@@ -85,7 +85,7 @@ router.put('/:machine', async (req, res) => {
       const created = await prioritiesTable.create([
         {
           fields: {
-            machine: req.params.machine,
+            Name: req.params.machine,
             priority
           }
         }
@@ -93,8 +93,8 @@ router.put('/:machine', async (req, res) => {
       record = created[0];
     }
     
-    res.json({ 
-      machine: record.fields.machine,
+    res.json({
+      machine: record.fields.Name,
       priority: record.fields.priority,
       id: record.id,
       message: 'Priority updated successfully'
@@ -119,9 +119,9 @@ router.post('/batch', async (req, res) => {
     for (const [machine, priority] of Object.entries(priorities)) {
       // Find existing record
       const existingRecords = await prioritiesTable.select({
-        filterByFormula: `{machine} = '${machine}'`
+        filterByFormula: `{Name} = '${machine}'`
       }).firstPage();
-      
+
       if (existingRecords.length > 0) {
         updates.push({
           id: existingRecords[0].id,
@@ -131,7 +131,7 @@ router.post('/batch', async (req, res) => {
         // Create new record
         await prioritiesTable.create([
           {
-            fields: { machine, priority }
+            fields: { Name: machine, priority }
           }
         ]);
       }
