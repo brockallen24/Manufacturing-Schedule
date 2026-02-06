@@ -90,6 +90,12 @@ function setupEventListeners() {
         input?.addEventListener('input', calculateTotalHours);
     });
 
+    // Auto-calculate total material from grams/part
+    const gramsPerPart = document.getElementById('gramsPerPart');
+    [gramsPerPart, numParts].forEach(input => {
+        input?.addEventListener('input', calculateTotalMaterial);
+    });
+
     // Auto-calculate percent complete from parts completed
     const partsCompleted = document.getElementById('partsCompleted');
     partsCompleted?.addEventListener('input', calculatePercentFromParts);
@@ -463,9 +469,20 @@ function renderJobs() {
     renderMaterialUsage(jobsByMachine);
 }
 
+// Calculate remaining material for a job based on percentage complete
+function calculateRemainingMaterial(job) {
+    const totalMaterial = parseFloat(job.totalMaterial || 0);
+    const percentComplete = parseFloat(job.percentComplete || 0);
+    const remainingMaterial = totalMaterial * ((100 - percentComplete) / 100);
+    return remainingMaterial;
+}
+
 // Create Job Card
 function createJobCard(job, cumulativeHours = 0) {
     const card = document.createElement('div');
+
+    // Calculate remaining material for regular jobs
+    const remainingMaterial = job.type !== 'setup' ? calculateRemainingMaterial(job) : 0;
 
     // Add conditional class based on toolReady status for setup cards
     if (job.type === 'setup') {
@@ -567,6 +584,11 @@ function createJobCard(job, cumulativeHours = 0) {
                 <i class="fas fa-calculator"></i>
                 <span>Cumulative: ${cumulativeHours.toFixed(2)} hrs</span>
             </div>
+            <div class="material-summary">
+                <i class="fas fa-box"></i>
+                <span class="material-label">Material Remaining:</span>
+                <span class="material-value">${remainingMaterial.toFixed(1)} lbs ${job.material || ''}</span>
+            </div>
         `;
     }
 
@@ -596,6 +618,7 @@ function openJobModal(jobId = null) {
             document.getElementById('cycleTime').value = job.cycleTime || '';
             document.getElementById('numCavities').value = job.numCavities || '';
             document.getElementById('material').value = job.material || '';
+            document.getElementById('gramsPerPart').value = job.gramsPerPart || '';
             document.getElementById('totalMaterial').value = job.totalMaterial || '';
             document.getElementById('totalHours').value = job.totalHours || '';
             document.getElementById('dueDate').value = job.dueDate || '';
@@ -671,6 +694,7 @@ async function handleJobSubmit(e) {
         cycleTime: parseFloat(document.getElementById('cycleTime').value),
         numCavities: parseInt(document.getElementById('numCavities').value),
         material: document.getElementById('material').value,
+        gramsPerPart: parseFloat(document.getElementById('gramsPerPart').value),
         totalMaterial: parseFloat(document.getElementById('totalMaterial').value),
         totalHours: parseFloat(document.getElementById('totalHours').value),
         dueDate: document.getElementById('dueDate').value,
@@ -851,6 +875,19 @@ function calculateTotalHours() {
     const totalHoursInput = document.getElementById('totalHours');
     if (totalHoursInput) {
         totalHoursInput.value = totalHours;
+    }
+}
+
+function calculateTotalMaterial() {
+    const gramsPerPart = parseFloat(document.getElementById('gramsPerPart')?.value) || 0;
+    const numParts = parseInt(document.getElementById('numParts')?.value) || 0;
+
+    // Convert grams to pounds: (gramsPerPart × numParts) / 454
+    const totalMaterialLbs = (gramsPerPart * numParts) / 454;
+
+    const totalMaterialInput = document.getElementById('totalMaterial');
+    if (totalMaterialInput) {
+        totalMaterialInput.value = totalMaterialLbs.toFixed(2);
     }
 }
 

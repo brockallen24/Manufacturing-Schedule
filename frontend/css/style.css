@@ -359,6 +359,32 @@ header h1 i {
     opacity: 0.9;
 }
 
+/* Material Summary */
+.material-summary {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+}
+
+.material-summary i {
+    opacity: 0.8;
+}
+
+.material-label {
+    opacity: 0.8;
+    font-weight: 500;
+}
+
+.material-value {
+    font-weight: 700;
+    color: #90EE90;
+    margin-left: auto;
+}
+
 .due-date-indicator {
     position: absolute;
     top: 50px;
