@@ -702,36 +702,39 @@ form {
     header {
         background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%) !important;
         box-shadow: none;
-        padding: 10px 20px !important;
-        margin-bottom: 15px;
+        padding: 15px 25px !important;
+        margin-bottom: 20px;
     }
 
     header h1 {
-        font-size: 28px !important;
+        font-size: 32px !important;
         color: white !important;
+        font-weight: 700 !important;
     }
 
     /* Schedule board - horizontal layout like app */
     .schedule-board {
         display: flex !important;
         flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        gap: 12px !important;
-        padding: 0 10px !important;
+        flex-wrap: wrap !important;
+        gap: 15px !important;
+        padding: 0 15px !important;
         overflow: visible !important;
         align-items: flex-start;
+        justify-content: center;
         width: 100%;
     }
 
-    /* Machine columns - equal width, preserve colors */
+    /* Machine columns - maintain proper width, allow wrap */
     .machine-column {
-        flex: 1 1 0 !important;
-        min-width: 0 !important;
-        max-width: none !important;
+        flex: 0 0 auto !important;
+        width: 280px !important;
+        min-width: 280px !important;
+        max-width: 320px !important;
         background: var(--card-bg) !important;
-        border-radius: 8px !important;
-        padding: 10px !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+        border-radius: 10px !important;
+        padding: 12px !important;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.12) !important;
         page-break-inside: avoid;
         break-inside: avoid;
     }
@@ -739,20 +742,21 @@ form {
     .machine-header {
         background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)) !important;
         color: white !important;
-        padding: 8px 12px !important;
-        border-radius: 6px !important;
-        margin-bottom: 8px !important;
+        padding: 10px 14px !important;
+        border-radius: 8px !important;
+        margin-bottom: 12px !important;
     }
 
     .machine-name {
-        font-size: 14px !important;
-        font-weight: 600 !important;
+        font-size: 16px !important;
+        font-weight: 700 !important;
         color: white !important;
     }
 
     .machine-priority {
-        font-size: 10px !important;
-        padding: 3px 8px !important;
+        font-size: 11px !important;
+        padding: 4px 10px !important;
+        border-radius: 12px !important;
     }
 
     /* Priority colors preserved */
@@ -765,10 +769,10 @@ form {
     .job-card {
         background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)) !important;
         color: white !important;
-        border-radius: 8px !important;
-        padding: 10px !important;
-        margin-bottom: 8px !important;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important;
+        border-radius: 10px !important;
+        padding: 12px 14px !important;
+        margin-bottom: 10px !important;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.2) !important;
         page-break-inside: avoid;
         break-inside: avoid;
     }
@@ -786,23 +790,25 @@ form {
     }
 
     .job-name {
-        font-size: 13px !important;
-        font-weight: 600 !important;
+        font-size: 15px !important;
+        font-weight: 700 !important;
         color: white !important;
+        margin-bottom: 2px !important;
     }
 
     .work-order {
-        font-size: 10px !important;
-        color: rgba(255,255,255,0.85) !important;
+        font-size: 12px !important;
+        color: rgba(255,255,255,0.9) !important;
     }
 
     .job-details {
-        font-size: 10px !important;
+        font-size: 12px !important;
+        margin-top: 8px !important;
     }
 
     .job-detail {
-        color: rgba(255,255,255,0.9) !important;
-        padding: 2px 0 !important;
+        color: rgba(255,255,255,0.95) !important;
+        padding: 3px 0 !important;
     }
 
     /* Progress bar visible */
