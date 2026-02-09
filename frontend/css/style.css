@@ -665,42 +665,247 @@ form {
     }
 }
 
-/* Print Styles */
+/* Print Styles - Optimized for 75" TV Display (16:9 ratio) */
 @media print {
+    @page {
+        size: landscape;
+        margin: 0.25in;
+    }
+
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+    }
+
     body {
-        background: white;
+        background: var(--bg-color) !important;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100vh;
+        overflow: visible;
     }
 
-    header {
-        box-shadow: none;
-        border-bottom: 2px solid #000;
-    }
-
+    /* Hide UI elements not needed for display */
     .header-actions,
-    .job-actions {
+    .job-actions,
+    .modal,
+    .tabs,
+    .archive-btn,
+    .toast,
+    #archiveTab {
         display: none !important;
     }
 
-    .schedule-board {
-        display: block;
-        page-break-inside: avoid;
-    }
-
-    .machine-column {
-        page-break-inside: avoid;
-        margin-bottom: 20px;
-        border: 1px solid #000;
-    }
-
-    .job-card {
-        background: white !important;
-        color: #000 !important;
-        border: 1px solid #000;
+    /* Keep header visible with colors */
+    header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%) !important;
         box-shadow: none;
+        padding: 10px 20px !important;
+        margin-bottom: 15px;
     }
 
-    .modal {
-        display: none !important;
+    header h1 {
+        font-size: 28px !important;
+        color: white !important;
+    }
+
+    /* Schedule board - horizontal layout like app */
+    .schedule-board {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        gap: 12px !important;
+        padding: 0 10px !important;
+        overflow: visible !important;
+        align-items: flex-start;
+        width: 100%;
+    }
+
+    /* Machine columns - equal width, preserve colors */
+    .machine-column {
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        background: var(--card-bg) !important;
+        border-radius: 8px !important;
+        padding: 10px !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+
+    .machine-header {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)) !important;
+        color: white !important;
+        padding: 8px 12px !important;
+        border-radius: 6px !important;
+        margin-bottom: 8px !important;
+    }
+
+    .machine-name {
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        color: white !important;
+    }
+
+    .machine-priority {
+        font-size: 10px !important;
+        padding: 3px 8px !important;
+    }
+
+    /* Priority colors preserved */
+    .priority-low { background: #28a745 !important; color: white !important; }
+    .priority-medium { background: #007bff !important; color: white !important; }
+    .priority-high { background: #ffc107 !important; color: #000 !important; }
+    .priority-critical { background: #dc3545 !important; color: white !important; }
+
+    /* Job cards - preserve gradient colors */
+    .job-card {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)) !important;
+        color: white !important;
+        border-radius: 8px !important;
+        padding: 10px !important;
+        margin-bottom: 8px !important;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important;
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+
+    .job-card.setup-card {
+        background: linear-gradient(135deg, #6c757d, #495057) !important;
+    }
+
+    .job-card.setup-card.tool-ready {
+        background: linear-gradient(135deg, #28a745, #1e7e34) !important;
+    }
+
+    .job-card.setup-card.tool-not-ready {
+        background: linear-gradient(135deg, #dc3545, #c82333) !important;
+    }
+
+    .job-name {
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        color: white !important;
+    }
+
+    .work-order {
+        font-size: 10px !important;
+        color: rgba(255,255,255,0.85) !important;
+    }
+
+    .job-details {
+        font-size: 10px !important;
+    }
+
+    .job-detail {
+        color: rgba(255,255,255,0.9) !important;
+        padding: 2px 0 !important;
+    }
+
+    /* Progress bar visible */
+    .progress-bar {
+        background: rgba(255,255,255,0.3) !important;
+        height: 6px !important;
+        border-radius: 3px !important;
+        margin: 6px 0 !important;
+    }
+
+    .progress-fill {
+        background: white !important;
+        height: 100% !important;
+        border-radius: 3px !important;
+    }
+
+    /* Cumulative hours and material summary */
+    .cumulative-hours,
+    .material-summary {
+        font-size: 10px !important;
+        color: rgba(255,255,255,0.9) !important;
+        padding-top: 6px !important;
+        margin-top: 6px !important;
+        border-top: 1px solid rgba(255,255,255,0.2) !important;
+    }
+
+    .material-value {
+        color: #90EE90 !important;
+    }
+
+    /* Due date indicators */
+    .due-date-row {
+        margin-bottom: 6px !important;
+    }
+
+    .due-date-indicator {
+        position: static !important;
+        display: inline-block !important;
+        font-size: 9px !important;
+        padding: 2px 8px !important;
+        background: rgba(255,255,255,0.25) !important;
+        border-radius: 10px !important;
+    }
+
+    .due-date-indicator.overdue {
+        background: #dc3545 !important;
+    }
+
+    .due-date-indicator.due-soon {
+        background: #ffc107 !important;
+        color: #000 !important;
+    }
+
+    /* Material usage column */
+    .material-usage-column {
+        background: var(--card-bg) !important;
+        flex: 1 1 0 !important;
+    }
+
+    .material-timeframe {
+        background: var(--bg-color) !important;
+        border-left: 3px solid var(--primary-color) !important;
+        padding: 8px !important;
+        margin-bottom: 10px !important;
+        border-radius: 6px !important;
+    }
+
+    .material-timeframe:nth-child(2) {
+        border-left-color: var(--warning-color) !important;
+    }
+
+    .material-timeframe:nth-child(3) {
+        border-left-color: var(--danger-color) !important;
+    }
+
+    .timeframe-header {
+        font-size: 11px !important;
+        font-weight: 600 !important;
+        color: var(--text-primary) !important;
+    }
+
+    .material-item {
+        font-size: 10px !important;
+        padding: 4px 8px !important;
+        background: white !important;
+        border-radius: 4px !important;
+        margin-top: 4px !important;
+    }
+
+    .material-amount {
+        color: var(--primary-color) !important;
+        font-weight: 600 !important;
+    }
+
+    /* Jobs container */
+    .jobs-container {
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    /* Parts completed display */
+    .parts-completed {
+        color: rgba(255,255,255,0.9) !important;
     }
 }
 
