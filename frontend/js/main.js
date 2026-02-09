@@ -236,9 +236,10 @@ function renderJobs() {
         `;
     });
 
-    // Group jobs by machine for cumulative hours calculation
+    // Filter out archived jobs and group by machine for cumulative hours calculation
+    const activeJobs = state.jobs.filter(job => !job.archived);
     const jobsByMachine = {};
-    state.jobs.forEach(job => {
+    activeJobs.forEach(job => {
         if (!jobsByMachine[job.machine]) {
             jobsByMachine[job.machine] = [];
         }
@@ -309,6 +310,9 @@ function createJobCard(job, cumulativeHours = 0) {
                     <button class="job-action-btn" draggable="false" onclick="editJob('${job.id}')" title="Edit">
                         <i class="fas fa-edit"></i>
                     </button>
+                    <button class="job-action-btn" draggable="false" onclick="archiveJob('${job.id}')" title="Archive">
+                        <i class="fas fa-box-archive"></i>
+                    </button>
                     <button class="job-action-btn" draggable="false" onclick="deleteJob('${job.id}')" title="Delete">
                         <i class="fas fa-trash"></i>
                     </button>
@@ -339,6 +343,9 @@ function createJobCard(job, cumulativeHours = 0) {
                 <div class="job-actions">
                     <button class="job-action-btn" draggable="false" onclick="editJob('${job.id}')" title="Edit">
                         <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="job-action-btn" draggable="false" onclick="archiveJob('${job.id}')" title="Archive">
+                        <i class="fas fa-box-archive"></i>
                     </button>
                     <button class="job-action-btn" draggable="false" onclick="deleteJob('${job.id}')" title="Delete">
                         <i class="fas fa-trash"></i>
@@ -575,6 +582,26 @@ window.deleteJob = async function(jobId) {
     } catch (error) {
         console.error('Error deleting job:', error);
         showToast('Failed to delete job', 'error');
+    }
+};
+
+window.archiveJob = async function(jobId) {
+    if (!confirm('Are you sure you want to archive this job?')) return;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/jobs/${jobId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ archived: true })
+        });
+        if (!response.ok) throw new Error('Failed to archive job');
+
+        showToast('Job archived successfully', 'success');
+        await loadJobs();
+        renderJobs();
+    } catch (error) {
+        console.error('Error archiving job:', error);
+        showToast('Failed to archive job', 'error');
     }
 };
 
