@@ -1093,6 +1093,10 @@ function renderPrioritiesView() {
     const prioritiesBoard = document.getElementById('prioritiesBoard');
     prioritiesBoard.innerHTML = '';
 
+    // Load saved sort order and priority assignments from localStorage
+    const savedSortOrder = JSON.parse(localStorage.getItem('manufacturing-schedule-priority-sort') || '{}');
+    const savedPriorityAssignments = JSON.parse(localStorage.getItem('manufacturing-schedule-priority-assignments') || '{}');
+
     // Get non-archived jobs
     const activeJobs = state.jobs.filter(job => !job.archived);
 
@@ -1114,7 +1118,7 @@ function renderPrioritiesView() {
         }
     });
 
-    // Group top jobs by their machine's priority
+    // Group top jobs by their saved priority assignment or machine's priority
     const priorityGroups = {
         critical: [],
         high: [],
@@ -1123,7 +1127,10 @@ function renderPrioritiesView() {
     };
 
     topJobs.forEach(job => {
-        const machinePriority = getMachinePriority(job.machine).toLowerCase();
+        // Check if this job has a saved priority assignment (from drag-drop)
+        const savedPriority = savedPriorityAssignments[job.id];
+        const machinePriority = savedPriority || getMachinePriority(job.machine).toLowerCase();
+
         if (priorityGroups[machinePriority]) {
             priorityGroups[machinePriority].push(job);
         } else {
@@ -1131,9 +1138,13 @@ function renderPrioritiesView() {
         }
     });
 
-    // Sort jobs within each priority group by sortOrder
+    // Sort jobs within each priority group by saved sort order
     Object.keys(priorityGroups).forEach(priority => {
-        priorityGroups[priority].sort((a, b) => (a.prioritySortOrder || a.sortOrder || 0) - (b.prioritySortOrder || b.sortOrder || 0));
+        priorityGroups[priority].sort((a, b) => {
+            const orderA = savedSortOrder[a.id] !== undefined ? savedSortOrder[a.id] : 9999;
+            const orderB = savedSortOrder[b.id] !== undefined ? savedSortOrder[b.id] : 9999;
+            return orderA - orderB;
+        });
     });
 
     // Load saved notes from localStorage
@@ -1357,14 +1368,20 @@ function createPriorityDropIndicator() {
 
 function savePrioritySortOrder() {
     const sortOrders = {};
+    const priorityAssignments = {};
+
     document.querySelectorAll('.priority-jobs-container').forEach(container => {
+        const priority = container.getAttribute('data-priority');
         const rows = container.querySelectorAll('.priority-job-row');
         rows.forEach((row, index) => {
             const jobId = row.getAttribute('data-job-id');
             sortOrders[jobId] = index;
+            priorityAssignments[jobId] = priority;
         });
     });
+
     localStorage.setItem('manufacturing-schedule-priority-sort', JSON.stringify(sortOrders));
+    localStorage.setItem('manufacturing-schedule-priority-assignments', JSON.stringify(priorityAssignments));
 }
 
 // Handle priority note changes
