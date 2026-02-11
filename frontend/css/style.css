@@ -916,6 +916,157 @@ form {
     }
 }
 
+/* Print Styles for MFG Priorities */
+@media print {
+    body.printing-priorities #scheduleTab,
+    body.printing-priorities #archiveTab,
+    body.printing-priorities .tabs,
+    body.printing-priorities .header-actions,
+    body.printing-priorities .modal {
+        display: none !important;
+    }
+
+    body.printing-priorities #prioritiesTab {
+        display: block !important;
+    }
+
+    body.printing-priorities .priorities-header {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)) !important;
+        color: white !important;
+        margin: 0 !important;
+        padding: 15px 25px !important;
+        border-radius: 0 !important;
+    }
+
+    body.printing-priorities .priorities-header h2 {
+        color: white !important;
+        font-size: 24px !important;
+    }
+
+    body.printing-priorities .priorities-header h2 i {
+        color: white !important;
+    }
+
+    body.printing-priorities #printPrioritiesBtn {
+        display: none !important;
+    }
+
+    body.printing-priorities .priorities-board {
+        padding: 10px !important;
+        gap: 12px !important;
+    }
+
+    body.printing-priorities .priority-section {
+        page-break-inside: avoid;
+        break-inside: avoid;
+        margin-bottom: 10px !important;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1) !important;
+    }
+
+    body.printing-priorities .priority-section-header {
+        padding: 10px 15px !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    body.printing-priorities .priority-section-title {
+        font-size: 14px !important;
+    }
+
+    body.printing-priorities .priority-count {
+        background: var(--primary-color) !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    body.printing-priorities .priority-jobs-container {
+        padding: 10px !important;
+    }
+
+    body.printing-priorities .priority-job-row {
+        margin-bottom: 8px !important;
+        gap: 10px !important;
+    }
+
+    body.printing-priorities .priority-job-card {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)) !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        padding: 10px 12px !important;
+        border-radius: 8px !important;
+    }
+
+    body.printing-priorities .priority-job-card.setup-card {
+        background: linear-gradient(135deg, #6c757d, #495057) !important;
+    }
+
+    body.printing-priorities .priority-job-card.setup-card.tool-ready {
+        background: linear-gradient(135deg, #28a745, #1e7e34) !important;
+    }
+
+    body.printing-priorities .priority-job-card.setup-card.tool-not-ready {
+        background: linear-gradient(135deg, #dc3545, #c82333) !important;
+    }
+
+    body.printing-priorities .priority-job-name {
+        font-size: 13px !important;
+        color: white !important;
+    }
+
+    body.printing-priorities .priority-job-machine {
+        font-size: 10px !important;
+        background: rgba(255,255,255,0.2) !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    body.printing-priorities .priority-job-details {
+        font-size: 10px !important;
+        color: rgba(255,255,255,0.95) !important;
+    }
+
+    body.printing-priorities .priority-due-date {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    body.printing-priorities .priority-due-date.overdue {
+        background: #dc3545 !important;
+    }
+
+    body.printing-priorities .priority-due-date.due-soon {
+        background: #ffc107 !important;
+        color: #000 !important;
+    }
+
+    body.printing-priorities .progress-bar.small {
+        height: 4px !important;
+        background: rgba(255,255,255,0.3) !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    body.printing-priorities .progress-bar.small .progress-fill {
+        background: white !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    body.printing-priorities .priority-note-container {
+        flex: 0 0 200px !important;
+    }
+
+    body.printing-priorities .priority-note {
+        font-size: 11px !important;
+        padding: 8px !important;
+        min-height: 60px !important;
+        border: 1px solid #ccc !important;
+        background: #f9f9f9 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+}
+
 /* Loading Spinner */
 .loading {
     display: inline-block;
@@ -1199,6 +1350,32 @@ form {
 
 .archive-btn i {
     font-size: 10px;
+}
+
+/* MFG Priorities Header */
+.priorities-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    margin: 20px 20px 0 20px;
+    box-shadow: var(--shadow-sm);
+}
+
+.priorities-header h2 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.priorities-header h2 i {
+    color: var(--primary-color);
 }
 
 /* MFG Priorities Board */

@@ -113,6 +113,7 @@ function setupEventListeners() {
 
     // Other buttons
     document.getElementById('printBtn')?.addEventListener('click', handlePrint);
+    document.getElementById('printPrioritiesBtn')?.addEventListener('click', handlePrintPriorities);
     document.getElementById('clearAllBtn')?.addEventListener('click', handleClearAll);
 }
 
@@ -900,6 +901,16 @@ function formatDate(date) {
 
 function handlePrint() {
     window.print();
+}
+
+function handlePrintPriorities() {
+    // Add a class to body to trigger priorities-specific print styles
+    document.body.classList.add('printing-priorities');
+    window.print();
+    // Remove the class after printing
+    setTimeout(() => {
+        document.body.classList.remove('printing-priorities');
+    }, 1000);
 }
 
 async function handleClearAll() {
