@@ -1003,6 +1003,9 @@ function switchTab(tab) {
     if (tab === 'schedule') {
         document.getElementById('scheduleTab').classList.add('active');
         renderJobs();
+    } else if (tab === 'priorities') {
+        document.getElementById('prioritiesTab').classList.add('active');
+        renderPrioritiesView();
     } else if (tab === 'archive') {
         document.getElementById('archiveTab').classList.add('active');
         renderArchive();
@@ -1013,6 +1016,8 @@ function switchTab(tab) {
 function renderCurrentView() {
     if (state.currentTab === 'schedule') {
         renderJobs();
+    } else if (state.currentTab === 'priorities') {
+        renderPrioritiesView();
     } else if (state.currentTab === 'archive') {
         renderArchive();
     }
@@ -1081,6 +1086,278 @@ function renderArchive() {
     `;
 
     archiveBoard.appendChild(table);
+}
+
+// Render MFG Priorities View
+function renderPrioritiesView() {
+    const prioritiesBoard = document.getElementById('prioritiesBoard');
+    prioritiesBoard.innerHTML = '';
+
+    // Get non-archived jobs
+    const activeJobs = state.jobs.filter(job => !job.archived);
+
+    // Group jobs by their machine's priority
+    const priorityGroups = {
+        critical: [],
+        high: [],
+        medium: [],
+        low: []
+    };
+
+    activeJobs.forEach(job => {
+        const machinePriority = getMachinePriority(job.machine).toLowerCase();
+        if (priorityGroups[machinePriority]) {
+            priorityGroups[machinePriority].push(job);
+        } else {
+            priorityGroups.low.push(job);
+        }
+    });
+
+    // Sort jobs within each priority group by sortOrder
+    Object.keys(priorityGroups).forEach(priority => {
+        priorityGroups[priority].sort((a, b) => (a.prioritySortOrder || a.sortOrder || 0) - (b.prioritySortOrder || b.sortOrder || 0));
+    });
+
+    // Load saved notes from localStorage
+    const savedNotes = JSON.parse(localStorage.getItem('manufacturing-schedule-priority-notes') || '{}');
+
+    // Create sections for each priority level
+    const priorityLevels = [
+        { key: 'critical', label: 'Critical', icon: 'fa-exclamation-circle', color: '#dc3545' },
+        { key: 'high', label: 'High', icon: 'fa-arrow-up', color: '#ffc107' },
+        { key: 'medium', label: 'Medium', icon: 'fa-minus', color: '#007bff' },
+        { key: 'low', label: 'Low', icon: 'fa-arrow-down', color: '#28a745' }
+    ];
+
+    priorityLevels.forEach(({ key, label, icon, color }) => {
+        const section = document.createElement('div');
+        section.className = 'priority-section';
+        section.setAttribute('data-priority', key);
+
+        const jobs = priorityGroups[key];
+
+        section.innerHTML = `
+            <div class="priority-section-header" style="border-left: 4px solid ${color};">
+                <i class="fas ${icon}" style="color: ${color};"></i>
+                <span class="priority-section-title">${label} Priority</span>
+                <span class="priority-count">${jobs.length} job${jobs.length !== 1 ? 's' : ''}</span>
+            </div>
+            <div class="priority-jobs-container" data-priority="${key}">
+                ${jobs.length === 0 ? `
+                    <div class="empty-state small">
+                        <p>No ${label.toLowerCase()} priority jobs</p>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+
+        const container = section.querySelector('.priority-jobs-container');
+
+        jobs.forEach(job => {
+            const jobRow = document.createElement('div');
+            jobRow.className = 'priority-job-row';
+            jobRow.setAttribute('draggable', 'true');
+            jobRow.setAttribute('data-job-id', job.id);
+
+            const dueDate = job.dueDate ? new Date(job.dueDate) : null;
+            const today = new Date();
+            const daysUntilDue = dueDate ? Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24)) : null;
+            let dueDateClass = '';
+            if (daysUntilDue !== null) {
+                if (daysUntilDue < 0) dueDateClass = 'overdue';
+                else if (daysUntilDue <= 3) dueDateClass = 'due-soon';
+            }
+
+            const savedNote = savedNotes[job.id] || '';
+
+            if (job.type === 'setup') {
+                jobRow.innerHTML = `
+                    <div class="priority-job-card setup-card ${job.toolReady === 'yes' ? 'tool-ready' : 'tool-not-ready'}">
+                        <div class="priority-job-header">
+                            <span class="priority-job-name"><i class="fas fa-tools"></i> Tool #${job.toolNumber}</span>
+                            <span class="priority-job-machine">Machine: ${job.machine}</span>
+                        </div>
+                        <div class="priority-job-details">
+                            <span><i class="fas fa-hourglass-half"></i> ${job.setupHours || 0} hrs</span>
+                            <span><i class="fas fa-tasks"></i> ${job.percentComplete || 0}%</span>
+                        </div>
+                        <div class="progress-bar small">
+                            <div class="progress-fill" style="width: ${job.percentComplete || 0}%"></div>
+                        </div>
+                    </div>
+                    <div class="priority-note-container">
+                        <textarea class="priority-note" placeholder="Add notes..." data-job-id="${job.id}">${savedNote}</textarea>
+                    </div>
+                `;
+            } else {
+                jobRow.innerHTML = `
+                    <div class="priority-job-card">
+                        <div class="priority-job-header">
+                            <span class="priority-job-name">${job.jobName}</span>
+                            <span class="priority-job-machine">Machine: ${job.machine}</span>
+                        </div>
+                        <div class="priority-job-subheader">
+                            <span class="priority-job-wo">WO: ${job.workOrder}</span>
+                            ${dueDate ? `<span class="priority-due-date ${dueDateClass}">${formatDate(dueDate)}</span>` : ''}
+                        </div>
+                        <div class="priority-job-details">
+                            <span><i class="fas fa-cubes"></i> ${job.numParts} parts</span>
+                            <span><i class="fas fa-layer-group"></i> ${job.material || 'N/A'}</span>
+                            <span><i class="fas fa-hourglass-half"></i> ${job.totalHours || 0} hrs</span>
+                            <span><i class="fas fa-tasks"></i> ${job.percentComplete || 0}%</span>
+                        </div>
+                        <div class="progress-bar small">
+                            <div class="progress-fill" style="width: ${job.percentComplete || 0}%"></div>
+                        </div>
+                    </div>
+                    <div class="priority-note-container">
+                        <textarea class="priority-note" placeholder="Add notes..." data-job-id="${job.id}">${savedNote}</textarea>
+                    </div>
+                `;
+            }
+
+            // Add drag event listeners
+            jobRow.addEventListener('dragstart', handlePriorityDragStart);
+            jobRow.addEventListener('dragend', handlePriorityDragEnd);
+
+            container.appendChild(jobRow);
+        });
+
+        // Add drop zone event listeners
+        container.addEventListener('dragover', handlePriorityDragOver);
+        container.addEventListener('dragleave', handlePriorityDragLeave);
+        container.addEventListener('drop', handlePriorityDrop);
+
+        prioritiesBoard.appendChild(section);
+    });
+
+    // Add note change listeners
+    document.querySelectorAll('.priority-note').forEach(textarea => {
+        textarea.addEventListener('input', handlePriorityNoteChange);
+    });
+}
+
+// Priority View Drag and Drop handlers
+let priorityDraggedElement = null;
+
+function handlePriorityDragStart(e) {
+    priorityDraggedElement = this;
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', this.getAttribute('data-job-id'));
+}
+
+function handlePriorityDragEnd(e) {
+    this.classList.remove('dragging');
+    document.querySelectorAll('.priority-jobs-container').forEach(container => {
+        container.classList.remove('drag-over');
+    });
+    document.querySelectorAll('.priority-drop-indicator').forEach(el => el.remove());
+    priorityDraggedElement = null;
+}
+
+function handlePriorityDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    this.classList.add('drag-over');
+
+    // Show drop indicator
+    const afterElement = getPriorityDragAfterElement(this, e.clientY);
+    const indicator = document.querySelector('.priority-drop-indicator') || createPriorityDropIndicator();
+
+    if (afterElement == null) {
+        this.appendChild(indicator);
+    } else {
+        this.insertBefore(indicator, afterElement);
+    }
+}
+
+function handlePriorityDragLeave(e) {
+    if (!this.contains(e.relatedTarget)) {
+        this.classList.remove('drag-over');
+    }
+}
+
+function handlePriorityDrop(e) {
+    e.preventDefault();
+    this.classList.remove('drag-over');
+    document.querySelectorAll('.priority-drop-indicator').forEach(el => el.remove());
+
+    if (!priorityDraggedElement) return;
+
+    const jobId = e.dataTransfer.getData('text/plain');
+    const newPriority = this.getAttribute('data-priority');
+    const afterElement = getPriorityDragAfterElement(this, e.clientY);
+
+    // Move the element in the DOM
+    if (afterElement == null) {
+        this.appendChild(priorityDraggedElement);
+    } else {
+        this.insertBefore(priorityDraggedElement, afterElement);
+    }
+
+    // Update the machine's priority to match the new section
+    const job = state.jobs.find(j => j.id === jobId);
+    if (job) {
+        const capitalizedPriority = newPriority.charAt(0).toUpperCase() + newPriority.slice(1);
+        updateMachinePriority(job.machine, capitalizedPriority).catch(err => {
+            console.error('Error updating machine priority:', err);
+        });
+
+        // Update local state
+        const priorityObj = state.machinePriorities.find(p => p.machine === job.machine);
+        if (priorityObj) {
+            priorityObj.priority = capitalizedPriority;
+        } else {
+            state.machinePriorities.push({ machine: job.machine, priority: capitalizedPriority });
+        }
+    }
+
+    // Save the new sort order
+    savePrioritySortOrder();
+}
+
+function getPriorityDragAfterElement(container, y) {
+    const draggableElements = [...container.querySelectorAll('.priority-job-row:not(.dragging)')];
+
+    return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+        } else {
+            return closest;
+        }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+function createPriorityDropIndicator() {
+    const indicator = document.createElement('div');
+    indicator.className = 'priority-drop-indicator';
+    return indicator;
+}
+
+function savePrioritySortOrder() {
+    const sortOrders = {};
+    document.querySelectorAll('.priority-jobs-container').forEach(container => {
+        const rows = container.querySelectorAll('.priority-job-row');
+        rows.forEach((row, index) => {
+            const jobId = row.getAttribute('data-job-id');
+            sortOrders[jobId] = index;
+        });
+    });
+    localStorage.setItem('manufacturing-schedule-priority-sort', JSON.stringify(sortOrders));
+}
+
+// Handle priority note changes
+function handlePriorityNoteChange(e) {
+    const jobId = e.target.getAttribute('data-job-id');
+    const note = e.target.value;
+
+    // Save to localStorage
+    const savedNotes = JSON.parse(localStorage.getItem('manufacturing-schedule-priority-notes') || '{}');
+    savedNotes[jobId] = note;
+    localStorage.setItem('manufacturing-schedule-priority-notes', JSON.stringify(savedNotes));
 }
 
 // Calculate Material Usage by Timeframe

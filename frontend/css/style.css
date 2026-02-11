@@ -694,7 +694,8 @@ form {
     .tabs,
     .archive-btn,
     .toast,
-    #archiveTab {
+    #archiveTab,
+    #prioritiesTab {
         display: none !important;
     }
 
@@ -1198,6 +1199,232 @@ form {
 
 .archive-btn i {
     font-size: 10px;
+}
+
+/* MFG Priorities Board */
+.priorities-board {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+}
+
+.priority-section {
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+}
+
+.priority-section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 15px 20px;
+    background: var(--bg-color);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.priority-section-header i {
+    font-size: 18px;
+}
+
+.priority-section-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.priority-count {
+    margin-left: auto;
+    background: var(--primary-color);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.priority-jobs-container {
+    padding: 15px;
+    min-height: 60px;
+    transition: background 0.2s ease;
+}
+
+.priority-jobs-container.drag-over {
+    background: rgba(102, 126, 234, 0.1);
+}
+
+.priority-jobs-container .empty-state.small {
+    padding: 20px;
+}
+
+.priority-jobs-container .empty-state.small p {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.priority-job-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 12px;
+    cursor: grab;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.priority-job-row:last-child {
+    margin-bottom: 0;
+}
+
+.priority-job-row.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+}
+
+.priority-job-row:hover {
+    transform: translateX(3px);
+}
+
+.priority-job-card {
+    flex: 1;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    border-radius: 10px;
+    padding: 14px 18px;
+    box-shadow: var(--shadow-sm);
+}
+
+.priority-job-card.setup-card {
+    background: linear-gradient(135deg, #6c757d, #495057);
+}
+
+.priority-job-card.setup-card.tool-ready {
+    background: linear-gradient(135deg, #28a745, #1e7e34);
+}
+
+.priority-job-card.setup-card.tool-not-ready {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+}
+
+.priority-job-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.priority-job-name {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.priority-job-machine {
+    font-size: 12px;
+    opacity: 0.9;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 3px 10px;
+    border-radius: 12px;
+}
+
+.priority-job-subheader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+.priority-job-wo {
+    font-weight: 500;
+}
+
+.priority-due-date {
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.2);
+    font-size: 11px;
+}
+
+.priority-due-date.overdue {
+    background: #dc3545;
+}
+
+.priority-due-date.due-soon {
+    background: #ffc107;
+    color: #000;
+}
+
+.priority-job-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 12px;
+    opacity: 0.95;
+    margin-bottom: 8px;
+}
+
+.priority-job-details span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.priority-job-card .progress-bar.small {
+    height: 5px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+    margin-top: 8px;
+}
+
+.priority-job-card .progress-bar.small .progress-fill {
+    background: white;
+}
+
+/* Priority Note Container */
+.priority-note-container {
+    flex: 0 0 250px;
+    display: flex;
+    align-items: stretch;
+}
+
+.priority-note {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    resize: none;
+    background: var(--bg-color);
+    color: var(--text-primary);
+    min-height: 80px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.priority-note:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+.priority-note::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
+
+/* Priority Drop Indicator */
+.priority-drop-indicator {
+    height: 3px;
+    background: var(--primary-color);
+    border-radius: 3px;
+    margin: 8px 0;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
 }
 
 /* Archive Board */
