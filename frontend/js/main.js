@@ -4,7 +4,10 @@ const state = {
     jobs: [],
     machinePriorities: [],
     editingJobId: null,
-    editingSetupId: null
+    editingSetupId: null,
+    mfgPriorityOverrides: {},  // { jobId: 'critical'|'high'|'medium'|'low' }
+    mfgPriorityNotes: {},      // { jobId: 'note text' }
+    activeTab: 'schedule'
 };
 
 // API Configuration
@@ -29,6 +32,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // Initialize Application
 function initializeApp() {
     createMachineColumns();
+    loadMfgPriorityData();
+    setupPriorityDragAndDrop();
     console.log('Manufacturing Schedule initialized');
 }
 
@@ -80,6 +85,11 @@ function setupEventListeners() {
 
     document.getElementById('setupPercentComplete')?.addEventListener('input', (e) => {
         document.getElementById('setupPercentCompleteValue').textContent = e.target.value;
+    });
+
+    // Tab navigation
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
     });
 
     // Other buttons
@@ -187,6 +197,9 @@ async function loadData() {
             loadMachinePriorities()
         ]);
         renderJobs();
+        if (state.activeTab === 'mfgPriorities') {
+            renderMfgPriorities();
+        }
         hideLoading();
     } catch (error) {
         console.error('Error loading data:', error);
@@ -476,6 +489,7 @@ async function handleJobSubmit(e) {
         }
         await loadJobs();
         renderJobs();
+        if (state.activeTab === 'mfgPriorities') renderMfgPriorities();
     } catch (error) {
         console.error('Error saving job:', error);
         showToast('Failed to save job', 'error');
@@ -507,6 +521,7 @@ async function handleSetupSubmit(e) {
         }
         await loadJobs();
         renderJobs();
+        if (state.activeTab === 'mfgPriorities') renderMfgPriorities();
     } catch (error) {
         console.error('Error saving setup:', error);
         showToast('Failed to save setup/maintenance', 'error');
@@ -541,6 +556,7 @@ async function updateJobMachine(jobId, machine) {
         await updateJob(jobId, { machine });
         await loadJobs();
         renderJobs();
+        if (state.activeTab === 'mfgPriorities') renderMfgPriorities();
         showToast('Job moved successfully', 'success');
     } catch (error) {
         console.error('Error updating job machine:', error);
@@ -572,6 +588,7 @@ window.deleteJob = async function(jobId) {
         showToast('Job deleted successfully', 'success');
         await loadJobs();
         renderJobs();
+        if (state.activeTab === 'mfgPriorities') renderMfgPriorities();
     } catch (error) {
         console.error('Error deleting job:', error);
         showToast('Failed to delete job', 'error');
@@ -617,6 +634,7 @@ async function handleClearAll() {
         showToast('All jobs cleared successfully', 'success');
         await loadJobs();
         renderJobs();
+        if (state.activeTab === 'mfgPriorities') renderMfgPriorities();
     } catch (error) {
         console.error('Error clearing jobs:', error);
         showToast('Failed to clear jobs', 'error');
@@ -683,4 +701,294 @@ function showToast(message, type = 'success') {
         toast.style.animation = 'slideOutRight 0.3s ease';
         setTimeout(() => toast.remove(), 300);
     }, 3000);
+}
+
+// ============================================
+// Tab Navigation
+// ============================================
+function switchTab(tabName) {
+    state.activeTab = tabName;
+
+    // Update tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-tab') === tabName);
+    });
+
+    // Update tab content
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+
+    if (tabName === 'schedule') {
+        document.getElementById('scheduleTab').classList.add('active');
+    } else if (tabName === 'mfgPriorities') {
+        document.getElementById('mfgPrioritiesTab').classList.add('active');
+        renderMfgPriorities();
+    }
+}
+
+// ============================================
+// MFG Priorities Tab
+// ============================================
+
+// Load saved priority overrides and notes from localStorage
+function loadMfgPriorityData() {
+    try {
+        const overrides = localStorage.getItem('manufacturing-schedule-mfg-priority-overrides');
+        const notes = localStorage.getItem('manufacturing-schedule-mfg-priority-notes');
+        if (overrides) state.mfgPriorityOverrides = JSON.parse(overrides);
+        if (notes) state.mfgPriorityNotes = JSON.parse(notes);
+    } catch (error) {
+        console.error('Error loading MFG priority data:', error);
+    }
+}
+
+// Save priority overrides to localStorage
+function saveMfgPriorityOverrides() {
+    try {
+        localStorage.setItem('manufacturing-schedule-mfg-priority-overrides', JSON.stringify(state.mfgPriorityOverrides));
+    } catch (error) {
+        console.error('Error saving MFG priority overrides:', error);
+    }
+}
+
+// Save notes to localStorage
+function saveMfgPriorityNotes() {
+    try {
+        localStorage.setItem('manufacturing-schedule-mfg-priority-notes', JSON.stringify(state.mfgPriorityNotes));
+    } catch (error) {
+        console.error('Error saving MFG priority notes:', error);
+    }
+}
+
+// Get effective MFG priority for a job
+function getJobMfgPriority(job) {
+    // Check for a manual override first
+    if (state.mfgPriorityOverrides[job.id]) {
+        return state.mfgPriorityOverrides[job.id];
+    }
+    // Fall back to machine priority
+    const machinePriority = getMachinePriority(job.machine);
+    const validPriorities = ['critical', 'high', 'medium', 'low'];
+    if (validPriorities.includes(machinePriority)) {
+        return machinePriority;
+    }
+    return 'low'; // default
+}
+
+// Setup drag and drop for priority containers
+function setupPriorityDragAndDrop() {
+    document.querySelectorAll('.priority-jobs-container').forEach(container => {
+        container.addEventListener('dragover', handlePriorityDragOver);
+        container.addEventListener('drop', handlePriorityDrop);
+        container.addEventListener('dragleave', handlePriorityDragLeave);
+    });
+}
+
+function handlePriorityDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    e.currentTarget.classList.add('drag-over');
+    return false;
+}
+
+function handlePriorityDragLeave(e) {
+    e.currentTarget.classList.remove('drag-over');
+}
+
+function handlePriorityDrop(e) {
+    e.stopPropagation();
+    e.preventDefault();
+
+    const jobId = e.dataTransfer.getData('jobId');
+    const targetPriority = e.currentTarget.getAttribute('data-priority');
+
+    if (jobId && targetPriority) {
+        // Update the job's MFG priority override
+        state.mfgPriorityOverrides[jobId] = targetPriority;
+        saveMfgPriorityOverrides();
+        renderMfgPriorities();
+        showToast(`Job moved to ${targetPriority} priority`, 'success');
+    }
+
+    e.currentTarget.classList.remove('drag-over');
+    return false;
+}
+
+// Render all jobs into priority sections
+function renderMfgPriorities() {
+    const priorityLevels = ['critical', 'high', 'medium', 'low'];
+
+    // Group jobs by their effective priority
+    const jobsByPriority = { critical: [], high: [], medium: [], low: [] };
+
+    state.jobs.forEach(job => {
+        const priority = getJobMfgPriority(job);
+        if (jobsByPriority[priority]) {
+            jobsByPriority[priority].push(job);
+        } else {
+            jobsByPriority['low'].push(job);
+        }
+    });
+
+    priorityLevels.forEach(priority => {
+        const container = document.querySelector(`.priority-jobs-container[data-priority="${priority}"]`);
+        if (!container) return;
+
+        // Update count badge
+        const countEl = document.getElementById(`${priority}Count`);
+        if (countEl) countEl.textContent = jobsByPriority[priority].length;
+
+        // Clear container
+        container.innerHTML = '';
+
+        if (jobsByPriority[priority].length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <p>No ${priority} priority jobs</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Render each job with its note
+        jobsByPriority[priority].forEach(job => {
+            const row = createPriorityJobRow(job);
+            container.appendChild(row);
+        });
+    });
+}
+
+// Create a priority job row (card + notes)
+function createPriorityJobRow(job) {
+    const row = document.createElement('div');
+    row.className = 'priority-job-row';
+
+    // Card wrapper
+    const cardWrapper = document.createElement('div');
+    cardWrapper.className = 'priority-job-card-wrapper';
+
+    const card = createPriorityJobCard(job);
+    cardWrapper.appendChild(card);
+
+    // Note wrapper
+    const noteWrapper = document.createElement('div');
+    noteWrapper.className = 'priority-note-wrapper';
+
+    const noteLabel = document.createElement('label');
+    noteLabel.innerHTML = '<i class="fas fa-sticky-note"></i> Notes';
+
+    const noteTextarea = document.createElement('textarea');
+    noteTextarea.placeholder = 'Add notes for this job...';
+    noteTextarea.value = state.mfgPriorityNotes[job.id] || '';
+
+    const savedIndicator = document.createElement('div');
+    savedIndicator.className = 'priority-note-saved';
+    savedIndicator.textContent = 'Saved';
+
+    let saveTimeout;
+    noteTextarea.addEventListener('input', () => {
+        state.mfgPriorityNotes[job.id] = noteTextarea.value;
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+            saveMfgPriorityNotes();
+            savedIndicator.classList.add('visible');
+            setTimeout(() => savedIndicator.classList.remove('visible'), 1500);
+        }, 500);
+    });
+
+    noteWrapper.appendChild(noteLabel);
+    noteWrapper.appendChild(noteTextarea);
+    noteWrapper.appendChild(savedIndicator);
+
+    row.appendChild(cardWrapper);
+    row.appendChild(noteWrapper);
+
+    return row;
+}
+
+// Create a job card for the priority view (similar to schedule but with machine badge)
+function createPriorityJobCard(job) {
+    const card = document.createElement('div');
+
+    if (job.type === 'setup') {
+        const readyClass = job.toolReady === 'yes' ? 'tool-ready' : 'tool-not-ready';
+        card.className = `job-card setup-card ${readyClass}`;
+    } else {
+        card.className = 'job-card';
+    }
+
+    card.setAttribute('draggable', 'true');
+    card.setAttribute('data-job-id', job.id);
+
+    const dueDate = job.dueDate ? new Date(job.dueDate) : null;
+    const today = new Date();
+    const daysUntilDue = dueDate ? Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24)) : null;
+
+    let dueDateClass = '';
+    if (daysUntilDue !== null) {
+        if (daysUntilDue < 0) dueDateClass = 'overdue';
+        else if (daysUntilDue <= 3) dueDateClass = 'due-soon';
+    }
+
+    if (job.type === 'setup') {
+        card.innerHTML = `
+            <div class="job-header">
+                <div>
+                    <div class="job-name"><i class="fas fa-tools"></i> Tool #${job.toolNumber}</div>
+                    <div class="work-order">Status: ${job.toolReady === 'yes' ? 'Ready' : 'Not Ready'}</div>
+                </div>
+            </div>
+            <div class="job-details">
+                <div class="job-detail">
+                    <i class="fas fa-hourglass-half"></i>
+                    <span>${job.setupHours || 0} hrs</span>
+                </div>
+            </div>
+            ${job.setupNotes ? `<div class="job-detail"><i class="fas fa-sticky-note"></i> ${job.setupNotes}</div>` : ''}
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: ${job.percentComplete || 0}%"></div>
+            </div>
+            <div class="machine-badge"><i class="fas fa-cog"></i> Machine: ${job.machine}</div>
+        `;
+    } else {
+        card.innerHTML = `
+            <div class="job-header">
+                <div>
+                    <div class="job-name">${job.jobName}</div>
+                    <div class="work-order">WO: ${job.workOrder}</div>
+                </div>
+            </div>
+            ${dueDate ? `<div class="due-date-indicator ${dueDateClass}">${formatDate(dueDate)}</div>` : ''}
+            <div class="job-details">
+                <div class="job-detail">
+                    <i class="fas fa-cubes"></i>
+                    <span>${job.numParts} parts</span>
+                </div>
+                <div class="job-detail">
+                    <i class="fas fa-clock"></i>
+                    <span>${job.cycleTime}s</span>
+                </div>
+                <div class="job-detail">
+                    <i class="fas fa-layer-group"></i>
+                    <span>${job.material}</span>
+                </div>
+                <div class="job-detail">
+                    <i class="fas fa-hourglass-half"></i>
+                    <span>${job.totalHours} hrs</span>
+                </div>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: ${job.percentComplete || 0}%"></div>
+            </div>
+            <div class="machine-badge"><i class="fas fa-cog"></i> Machine: ${job.machine}</div>
+        `;
+    }
+
+    // Add drag event listeners
+    card.addEventListener('dragstart', handleDragStart);
+    card.addEventListener('dragend', handleDragEnd);
+
+    return card;
 }
