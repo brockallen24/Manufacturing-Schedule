@@ -980,20 +980,27 @@ form {
     }
 
     body.printing-priorities .priority-jobs-container {
-        padding: 10px !important;
+        padding: 8px !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
     }
 
     body.printing-priorities .priority-job-row {
-        margin-bottom: 8px !important;
-        gap: 10px !important;
+        width: calc(25% - 6px) !important;
+        min-width: 0 !important;
+        flex-direction: column !important;
+        gap: 4px !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
     }
 
     body.printing-priorities .priority-job-card {
         background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)) !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
-        padding: 10px 12px !important;
-        border-radius: 8px !important;
+        padding: 8px 10px !important;
+        border-radius: 6px !important;
     }
 
     body.printing-priorities .priority-job-card.setup-card {
@@ -1053,17 +1060,46 @@ form {
     }
 
     body.printing-priorities .priority-note-container {
-        flex: 0 0 200px !important;
+        width: 100% !important;
     }
 
     body.printing-priorities .priority-note {
-        font-size: 11px !important;
-        padding: 8px !important;
-        min-height: 60px !important;
+        font-size: 9px !important;
+        padding: 6px !important;
+        min-height: 40px !important;
         border: 1px solid #ccc !important;
-        background: #f9f9f9 !important;
+        background: #f5f5f5 !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
+        border-radius: 4px !important;
+    }
+
+    body.printing-priorities .priority-job-name {
+        font-size: 11px !important;
+    }
+
+    body.printing-priorities .priority-job-machine {
+        font-size: 8px !important;
+        padding: 2px 6px !important;
+    }
+
+    body.printing-priorities .priority-job-subheader {
+        font-size: 9px !important;
+        margin-bottom: 4px !important;
+    }
+
+    body.printing-priorities .priority-job-details {
+        font-size: 9px !important;
+        gap: 6px !important;
+    }
+
+    body.printing-priorities .priority-job-header {
+        margin-bottom: 3px !important;
+    }
+
+    body.printing-priorities .progress-bar.small {
+        height: 3px !important;
+        margin-top: 4px !important;
     }
 }
 
@@ -1426,6 +1462,9 @@ form {
     padding: 15px;
     min-height: 60px;
     transition: background 0.2s ease;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
 }
 
 .priority-jobs-container.drag-over {
@@ -1434,6 +1473,7 @@ form {
 
 .priority-jobs-container .empty-state.small {
     padding: 20px;
+    width: 100%;
 }
 
 .priority-jobs-container .empty-state.small p {
@@ -1443,8 +1483,10 @@ form {
 
 .priority-job-row {
     display: flex;
-    gap: 15px;
-    margin-bottom: 12px;
+    flex-direction: column;
+    gap: 8px;
+    width: calc(25% - 12px);
+    min-width: 250px;
     cursor: grab;
     transition: opacity 0.2s ease, transform 0.2s ease;
 }
@@ -1560,22 +1602,21 @@ form {
 
 /* Priority Note Container */
 .priority-note-container {
-    flex: 0 0 250px;
+    width: 100%;
     display: flex;
-    align-items: stretch;
 }
 
 .priority-note {
     width: 100%;
-    padding: 12px;
+    padding: 10px;
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    font-size: 13px;
+    font-size: 12px;
     font-family: inherit;
     resize: none;
     background: var(--bg-color);
     color: var(--text-primary);
-    min-height: 80px;
+    min-height: 60px;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
