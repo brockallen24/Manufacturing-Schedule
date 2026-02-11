@@ -1096,7 +1096,25 @@ function renderPrioritiesView() {
     // Get non-archived jobs
     const activeJobs = state.jobs.filter(job => !job.archived);
 
-    // Group jobs by their machine's priority
+    // Group jobs by machine first
+    const jobsByMachine = {};
+    activeJobs.forEach(job => {
+        if (!jobsByMachine[job.machine]) {
+            jobsByMachine[job.machine] = [];
+        }
+        jobsByMachine[job.machine].push(job);
+    });
+
+    // Sort each machine's jobs by sortOrder and get only the TOP job from each machine
+    const topJobs = [];
+    Object.keys(jobsByMachine).forEach(machine => {
+        jobsByMachine[machine].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+        if (jobsByMachine[machine].length > 0) {
+            topJobs.push(jobsByMachine[machine][0]); // Only the first/top job
+        }
+    });
+
+    // Group top jobs by their machine's priority
     const priorityGroups = {
         critical: [],
         high: [],
@@ -1104,7 +1122,7 @@ function renderPrioritiesView() {
         low: []
     };
 
-    activeJobs.forEach(job => {
+    topJobs.forEach(job => {
         const machinePriority = getMachinePriority(job.machine).toLowerCase();
         if (priorityGroups[machinePriority]) {
             priorityGroups[machinePriority].push(job);
